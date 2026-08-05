@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Search, Bell, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Search, Bell, User, AlertTriangle } from 'lucide-react';
 import { ALERTS } from '@/data/mockData';
 import { cn, timeAgo } from '@/lib/utils';
 
@@ -114,11 +114,10 @@ export default function Header() {
           </div>
 
           <button className="flex items-center gap-2 rounded-lg border border-border py-1.5 pl-1.5 pr-2.5 hover:bg-background">
-            <div className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-cat-black text-xs font-bold text-cat-yellow">
-              RM
+            <div className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-cat-black text-cat-yellow">
+              <User className="h-3.5 w-3.5" />
             </div>
-            <span className="hidden text-sm font-medium text-cat-black sm:inline">Ravi Menon</span>
-            <ChevronDown className="h-3.5 w-3.5 text-cat-slate" />
+            <span className="hidden text-sm font-medium text-cat-black sm:inline">User</span>
           </button>
         </div>
       </div>
