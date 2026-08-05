@@ -1,0 +1,36 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Byte-compiled / optimized files
+*.pyc
+
+# Environment variables
+.env
+.env.*
+
+# Trained ML model (large binary — regenerate locally)
+*.joblib
+*.pkl
+*.pickle
+
+# Data files (large — seed from source)
+*.csv
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Logs
+*.log
