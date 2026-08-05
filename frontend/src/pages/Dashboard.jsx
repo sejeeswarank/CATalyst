@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import KpiCard from '@/components/dashboard/KpiCard';
 import AssetTable from '@/components/dashboard/AssetTable';
 import { EQUIPMENT, getKpis } from '@/data/mockData';
@@ -38,7 +37,6 @@ export default function Dashboard() {
         eyebrow="Fleet Operations"
         title="Fleet Dashboard"
         subtitle="Live overview of every machine across all sites."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -147,8 +147,8 @@ export const EQUIPMENT = Array.from({ length: 50 }, (_, i) => {
       engineHoursToday = randFloat(3.5, 11, 1);
       idleHoursToday = randFloat(0, 1.5, 1);
     } else {
-      engineHoursToday = randFloat(0, 1.5, 1);
-      idleHoursToday = randFloat(1.5, 9, 1);
+      engineHoursToday = 0;
+      idleHoursToday = 0;
     }
   } else {
     lastReturnedLate = chance(0.15);
@@ -171,10 +171,12 @@ export const EQUIPMENT = Array.from({ length: 50 }, (_, i) => {
     region: site.region,
     status, // Running | Idle | Available | Maintenance
     isRented,
+    rentedBy: isRented ? pick(['BuildRight Corp', 'Metro Infra', 'Granite & Co', 'Coastal Contractors', 'Apex Earthworks', 'Union Construction']) : null,
     operatorId,
     checkOutDate,
     checkInDate,
     rentalDaysLeft,
+    totalRentedHours: isRented ? (randInt(40, 220) + Number(engineHoursToday.toFixed(1))) : 0,
     engineHoursToday,
     idleHoursToday,
     dailyRate,
@@ -275,6 +277,7 @@ function buildAlerts() {
       equipmentId: e.id,
       vehicle: e.type,
       site: e.siteName,
+      rentedBy: e.rentedBy || (e.operatorId ? `Operator ${e.operatorId}` : 'BuildRight Corp'),
       severity, // critical | warning
       status: resolved ? 'Resolved' : 'Active',
       timestamp: new Date(Date.now() - hoursAgo * 3600 * 1000),

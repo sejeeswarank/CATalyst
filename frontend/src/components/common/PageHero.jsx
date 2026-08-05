@@ -20,11 +20,7 @@ export default function PageHero({ eyebrow, title, subtitle, action, illustratio
         }}
       />
 
-      {illustration && (
-        <div className="pointer-events-none absolute -right-6 bottom-0 hidden w-72 md:block lg:w-96">
-          {illustration}
-        </div>
-      )}
+
 
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="md:max-w-[55%]">

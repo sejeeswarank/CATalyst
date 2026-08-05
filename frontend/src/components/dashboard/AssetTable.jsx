@@ -118,29 +118,42 @@ export default function AssetTable({ data, filterable = false, paginated = false
             </TR>
           </THead>
           <TBody>
-            {pageRows.map((e) => (
-              <TR key={e.id}>
-                <TD className="font-semibold text-cat-black">{e.id}</TD>
-                <TD>{e.type}</TD>
-                <TD>{e.siteId}</TD>
-                <TD><StatusBadge status={e.status} /></TD>
-                <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>
-                <TD>{e.checkOutDate ? formatDate(e.checkOutDate) : '—'}</TD>
-                <TD>{e.checkInDate ? formatDate(e.checkInDate) : '—'}</TD>
-                <TD>{e.engineHoursToday.toFixed(1)}h</TD>
-                <TD className={cn(e.idleHoursToday > 4 && 'font-semibold text-warning-fg')}>
-                  {e.idleHoursToday.toFixed(1)}h
-                </TD>
-                <TD className={cn(e.rentalDaysLeft < 0 && 'font-semibold text-danger')}>
-                  {e.rentalDaysLeft === null ? '—' : e.rentalDaysLeft}
-                </TD>
-                <TD className="text-right">
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/equipment/${e.id}`)}>
-                    <Eye className="h-3.5 w-3.5" /> View Details
-                  </Button>
-                </TD>
-              </TR>
-            ))}
+            {pageRows.map((e) => {
+              const isBookedNotUsing = view === 'booked' || (e.isRented && e.status !== 'Running');
+              return (
+                <TR key={e.id}>
+                  <TD className="font-semibold text-cat-black">{e.id}</TD>
+                  <TD>{e.type}</TD>
+                  <TD>{e.siteId}</TD>
+                  <TD><StatusBadge status={e.status} /></TD>
+                  <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>
+                  <TD>{e.checkOutDate ? formatDate(e.checkOutDate) : '—'}</TD>
+                  <TD>{e.checkInDate ? formatDate(e.checkInDate) : '—'}</TD>
+                  <TD>
+                    {isBookedNotUsing ? (
+                      <span className="text-cat-slate">—</span>
+                    ) : (
+                      `${e.engineHoursToday.toFixed(1)}h`
+                    )}
+                  </TD>
+                  <TD className={cn(!isBookedNotUsing && e.idleHoursToday > 4 && 'font-semibold text-warning-fg')}>
+                    {isBookedNotUsing ? (
+                      <span className="text-cat-slate">—</span>
+                    ) : (
+                      `${e.idleHoursToday.toFixed(1)}h`
+                    )}
+                  </TD>
+                  <TD className={cn(e.rentalDaysLeft !== null && e.rentalDaysLeft < 0 && 'font-semibold text-danger')}>
+                    {e.rentalDaysLeft === null ? '—' : `${e.rentalDaysLeft} days`}
+                  </TD>
+                  <TD className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/equipment/${e.id}`)}>
+                      <Eye className="h-3.5 w-3.5" /> View Details
+                    </Button>
+                  </TD>
+                </TR>
+              );
+            })}
             {pageRows.length === 0 && (
               <TR>
                 <TD colSpan={11} className="py-10 text-center text-cat-slate">

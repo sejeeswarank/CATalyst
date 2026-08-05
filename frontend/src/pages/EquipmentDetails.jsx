@@ -66,8 +66,16 @@ export default function EquipmentDetails() {
               label="Rental Window"
               value={equipment.isRented ? `${formatDate(equipment.checkOutDate)} → ${formatDate(equipment.checkInDate)}` : 'Not currently rented'}
             />
-            <InfoRow icon={CalendarClock} label="Rental Days" value={equipment.rentalDaysLeft ?? '—'} />
-            <InfoRow icon={CalendarClock} label="Engine / Idle Hours Today" value={`${equipment.engineHoursToday.toFixed(1)}h / ${equipment.idleHoursToday.toFixed(1)}h`} />
+            <InfoRow icon={CalendarClock} label="Total Rented Hours" value={equipment.isRented ? `${equipment.totalRentedHours ?? (equipment.history ? equipment.history.reduce((acc, h) => acc + h.engineHours, 0).toFixed(1) : 0)} hrs` : 'Not rented'} />
+            <InfoRow
+              icon={CalendarClock}
+              label="Engine / Idle Hours Today"
+              value={
+                equipment.isRented && equipment.status !== 'Running'
+                  ? '— / —'
+                  : `${equipment.engineHoursToday.toFixed(1)}h / ${equipment.idleHoursToday.toFixed(1)}h`
+              }
+            />
           </CardContent>
         </Card>
       </div>

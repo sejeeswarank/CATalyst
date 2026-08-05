@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AlertOctagon, AlertTriangle, CheckCircle2, ListFilter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import KpiCard from '@/components/dashboard/KpiCard';
 import AlertsMiniTable from '@/components/dashboard/AlertsMiniTable';
 import { getAlertKpis, getRentalAlerts, getEquipmentAlerts } from '@/data/mockData';
@@ -22,7 +21,6 @@ export default function Alerts() {
         eyebrow="Fleet Monitoring"
         title="Alerts & Anomalies"
         subtitle="Rule-based alerts generated from live fleet telemetry."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -60,6 +58,7 @@ export default function Alerts() {
 
           <AlertsMiniTable
             alerts={activeAlerts}
+            isRentalView={view === 'rental'}
             emptyLabel={view === 'rental' ? 'No rentals ending soon or overdue.' : 'No equipment alerts right now.'}
           />
         </CardContent>

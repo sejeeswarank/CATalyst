@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import { TrendingUp, RefreshCw } from 'lucide-react';
 
 const DEFAULT_SITES = ['S001', 'S002', 'S003', 'S004', 'S005', 'S006'];
@@ -98,7 +97,6 @@ export default function DemandForecastPanel() {
         eyebrow="Predictive Analytics"
         title="Demand Forecast"
         subtitle="7-day predicted equipment demand aggregated per job site."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       {loading ? (

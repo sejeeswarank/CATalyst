@@ -8,7 +8,6 @@ import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import Dialog from '@/components/ui/dialog';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import { EQUIPMENT, REGIONS, VEHICLE_TYPES, TODAY } from '@/data/mockData';
 import { useAppData } from '@/state/AppDataContext';
 import { formatDate, daysBetween } from '@/lib/utils';
@@ -75,7 +74,6 @@ export default function CheckAvailability() {
         eyebrow="Rental Booking"
         title="Check Availability Status"
         subtitle="Match a client's requirement — machine type, date needed and rental timeline — against the live fleet."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <Card>

@@ -4,7 +4,6 @@ import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import KpiCard from '@/components/dashboard/KpiCard';
 import { getMaintenanceKpis, getMaintenanceSchedule } from '@/data/mockData';
 import { cn, formatDate, downloadCSV } from '@/lib/utils';
@@ -34,7 +33,6 @@ export default function Analytics() {
         eyebrow="Fleet Intelligence"
         title="Vehicle Maintenance Analysis"
         subtitle="Service schedules, overdue machines, and maintenance workload across the fleet."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

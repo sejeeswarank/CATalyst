@@ -6,6 +6,7 @@ import CheckAvailability from './pages/CheckAvailability';
 import Alerts from './pages/Alerts';
 import Analytics from './pages/Analytics';
 import DemandForecastPanel from './components/DemandForecastPanel';
+import MachineryUsage from './pages/MachineryUsage';
 import Settings from './pages/Settings';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/forecast" element={<DemandForecastPanel />} />
+        <Route path="/machinery-usage" element={<MachineryUsage />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
     </Routes>

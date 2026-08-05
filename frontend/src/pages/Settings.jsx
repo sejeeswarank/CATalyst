@@ -6,7 +6,6 @@ import Button from '@/components/ui/button';
 import Input from '@/components/ui/input';
 import Dialog from '@/components/ui/dialog';
 import PageHero from '@/components/common/PageHero';
-import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import NewOperatorForm from '@/components/dashboard/NewOperatorForm';
 import { useAppData } from '@/state/AppDataContext';
 
@@ -32,7 +31,6 @@ export default function Settings() {
         eyebrow="Onboarding"
         title="Fleet Setup"
         subtitle="Onboard the sites and operators your fleet runs on."
-        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <Card>
