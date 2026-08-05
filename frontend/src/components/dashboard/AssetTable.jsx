@@ -7,6 +7,7 @@ import Select from '@/components/ui/select';
 import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
 import { formatDate, cn } from '@/lib/utils';
+import { getVehicleImage } from '@/data/mockData';
 
 const STATUS_OPTIONS = ['All', 'Running', 'Idle', 'Available', 'Maintenance'];
 
@@ -123,7 +124,18 @@ export default function AssetTable({ data, filterable = false, paginated = false
               return (
                 <TR key={e.id}>
                   <TD className="font-semibold text-cat-black">{e.id}</TD>
-                  <TD>{e.type}</TD>
+                  <TD>
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cat-black p-0.5 border border-cat-charcoal overflow-hidden">
+                        <img
+                          src={e.image || getVehicleImage(e.type)}
+                          alt={e.type}
+                          className="h-full w-full object-contain"
+                        />
+                      </div>
+                      <span className="font-medium">{e.type}</span>
+                    </div>
+                  </TD>
                   <TD>{e.siteId}</TD>
                   <TD><StatusBadge status={e.status} /></TD>
                   <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>

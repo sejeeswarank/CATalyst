@@ -40,6 +40,20 @@ export const VEHICLE_TYPES = [
   'Forklift',
 ];
 
+export const VEHICLE_IMAGES = {
+  'Excavator': '/vehicles/excavator.png',
+  'Bulldozer': '/vehicles/bulldozer.png',
+  'Crane': '/vehicles/crane.png',
+  'Grader': '/vehicles/grader.png',
+  'Wheel Loader': '/vehicles/wheel_loader.png',
+  'Dump Truck': '/vehicles/dump_truck.png',
+  'Forklift': '/vehicles/forklift.png',
+};
+
+export const getVehicleImage = (type) => {
+  return VEHICLE_IMAGES[type] || '/vehicles/excavator.png';
+};
+
 const DAILY_RATE = {
   Excavator: 450,
   Bulldozer: 700,
@@ -166,6 +180,7 @@ export const EQUIPMENT = Array.from({ length: 50 }, (_, i) => {
   return {
     id,
     type,
+    image: getVehicleImage(type),
     siteId: site.id,
     siteName: site.name,
     region: site.region,

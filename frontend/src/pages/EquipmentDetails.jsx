@@ -5,7 +5,7 @@ import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
-import { getEquipmentById } from '@/data/mockData';
+import { getEquipmentById, getVehicleImage } from '@/data/mockData';
 import { formatDate } from '@/lib/utils';
 
 export default function EquipmentDetails() {
@@ -35,6 +35,8 @@ export default function EquipmentDetails() {
     })),
   ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
+  const vehicleImg = equipment.image || getVehicleImage(equipment.type);
+
   return (
     <div className="space-y-6">
       <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-cat-slate hover:text-cat-black">
@@ -42,14 +44,22 @@ export default function EquipmentDetails() {
       </Link>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 overflow-hidden">
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-            <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-cat-black to-cat-charcoal">
-              <Truck className="h-14 w-14 text-cat-yellow" />
+            <div className="relative flex h-48 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-cat-black via-cat-charcoal to-black p-3 border border-cat-charcoal/50 shadow-inner group">
+              <img
+                src={vehicleImg}
+                alt={equipment.type}
+                className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = '/vehicles/excavator.png';
+                }}
+              />
             </div>
             <div>
-              <h2 className="font-display text-xl text-cat-black">{equipment.id}</h2>
-              <p className="text-sm normal-case text-cat-slate">{equipment.type}</p>
+              <h2 className="font-display text-2xl font-bold text-cat-black">{equipment.id}</h2>
+              <p className="text-xs font-bold uppercase tracking-wider text-cat-yellow bg-cat-black px-3 py-1 rounded-md inline-block mt-1.5">{equipment.type}</p>
             </div>
             <StatusBadge status={equipment.status} />
           </CardContent>
