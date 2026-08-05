@@ -14,9 +14,9 @@ export default function NewOperatorForm() {
   const [location, setLocation] = useState('');
   const [lastCreated, setLastCreated] = useState(null);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const operator = addOperator({ name, email, phone, location: location || sites[0]?.name });
+    const operator = await addOperator({ name, email, phone, location: location || sites[0]?.name });
     if (operator) {
       setLastCreated(operator);
       setName('');

@@ -5,13 +5,17 @@ import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
-import { getEquipmentById } from '@/data/mockData';
+import Loader from '@/components/Loader';
+import { useAppData } from '@/state/AppDataContext';
 import { formatDate } from '@/lib/utils';
 
 export default function EquipmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { loading, getEquipmentById } = useAppData();
   const equipment = getEquipmentById(id);
+
+  if (loading) return <Loader />;
 
   if (!equipment) {
     return (
@@ -66,7 +70,15 @@ export default function EquipmentDetails() {
               label="Rental Window"
               value={equipment.isRented ? `${formatDate(equipment.checkOutDate)} → ${formatDate(equipment.checkInDate)}` : 'Not currently rented'}
             />
-            <InfoRow icon={CalendarClock} label="Total Rented Hours" value={equipment.isRented ? `${equipment.totalRentedHours ?? (equipment.history ? equipment.history.reduce((acc, h) => acc + h.engineHours, 0).toFixed(1) : 0)} hrs` : 'Not rented'} />
+            <InfoRow
+              icon={CalendarClock}
+              label="Total Rented Hours"
+              value={
+                equipment.isRented
+                  ? `${equipment.history.reduce((acc, h) => acc + h.engineHours, 0).toFixed(1)} hrs`
+                  : 'Not rented'
+              }
+            />
             <InfoRow
               icon={CalendarClock}
               label="Engine / Idle Hours Today"
@@ -95,15 +107,21 @@ export default function EquipmentDetails() {
                 </TR>
               </THead>
               <TBody>
-                {equipment.history.map((h, i) => (
-                  <TR key={i}>
-                    <TD className="font-medium text-cat-black">{formatDate(h.date)}</TD>
-                    <TD>{h.engineHours.toFixed(1)}h</TD>
-                    <TD>{h.idleHours.toFixed(1)}h</TD>
-                    <TD>{h.fuelUsage.toFixed(1)} L</TD>
-                    <TD className="text-cat-slate">{h.location}</TD>
+                {equipment.history.length > 0 ? (
+                  equipment.history.map((h, i) => (
+                    <TR key={i}>
+                      <TD className="font-medium text-cat-black">{formatDate(h.date)}</TD>
+                      <TD>{h.engineHours.toFixed(1)}h</TD>
+                      <TD>{h.idleHours.toFixed(1)}h</TD>
+                      <TD>{h.fuelUsage.toFixed(1)} L</TD>
+                      <TD className="text-cat-slate">{h.location}</TD>
+                    </TR>
+                  ))
+                ) : (
+                  <TR>
+                    <TD colSpan={5} className="py-8 text-center text-cat-slate">No usage history recorded yet.</TD>
                   </TR>
-                ))}
+                )}
               </TBody>
             </Table>
           </div>
@@ -124,14 +142,20 @@ export default function EquipmentDetails() {
                 </TR>
               </THead>
               <TBody>
-                {equipment.rentalHistory.map((r, i) => (
-                  <TR key={i}>
-                    <TD className="font-medium text-cat-black">{r.client}</TD>
-                    <TD>{r.operator}</TD>
-                    <TD>{formatDate(r.start)}</TD>
-                    <TD>{formatDate(r.end)}</TD>
+                {equipment.rentalHistory.length > 0 ? (
+                  equipment.rentalHistory.map((r, i) => (
+                    <TR key={i}>
+                      <TD className="font-medium text-cat-black">{r.client}</TD>
+                      <TD>{r.operator}</TD>
+                      <TD>{formatDate(r.start)}</TD>
+                      <TD>{formatDate(r.end)}</TD>
+                    </TR>
+                  ))
+                ) : (
+                  <TR>
+                    <TD colSpan={4} className="py-8 text-center text-cat-slate">No rental history yet.</TD>
                   </TR>
-                ))}
+                )}
               </TBody>
             </Table>
           </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, AlertTriangle } from 'lucide-react';
-import { ALERTS } from '@/data/mockData';
+import { useAppData } from '@/state/AppDataContext';
 import { cn, timeAgo } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -18,9 +18,10 @@ export default function Header() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
+  const { alerts } = useAppData();
 
-  const activeAlerts = ALERTS.filter((a) => a.status === 'Active').slice(0, 6);
-  const activeCount = ALERTS.filter((a) => a.status === 'Active').length;
+  const activeAlerts = alerts.filter((a) => a.status === 'Active').slice(0, 6);
+  const activeCount = alerts.filter((a) => a.status === 'Active').length;
 
   const handleSearch = (e) => {
     e.preventDefault();

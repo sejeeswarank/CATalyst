@@ -4,12 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import PageHero from '@/components/common/PageHero';
 import KpiCard from '@/components/dashboard/KpiCard';
 import AlertsMiniTable from '@/components/dashboard/AlertsMiniTable';
-import { getAlertKpis, getRentalAlerts, getEquipmentAlerts } from '@/data/mockData';
+import Loader from '@/components/Loader';
+import { useAppData } from '@/state/AppDataContext';
 import { cn } from '@/lib/utils';
 
 export default function Alerts() {
+  const { loading, getAlertKpis, getRentalAlerts, getEquipmentAlerts } = useAppData();
   const kpis = getAlertKpis();
   const [view, setView] = useState('rental');
+
+  if (loading) return <Loader />;
 
   const rentalAlerts = getRentalAlerts();
   const equipmentAlerts = getEquipmentAlerts();

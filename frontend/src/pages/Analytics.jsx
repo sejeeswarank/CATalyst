@@ -5,12 +5,16 @@ import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import PageHero from '@/components/common/PageHero';
 import KpiCard from '@/components/dashboard/KpiCard';
-import { getMaintenanceKpis, getMaintenanceSchedule } from '@/data/mockData';
+import Loader from '@/components/Loader';
+import { useAppData } from '@/state/AppDataContext';
 import { cn, formatDate, downloadCSV } from '@/lib/utils';
 
 export default function Analytics() {
+  const { loading, getMaintenanceKpis, getMaintenanceSchedule } = useAppData();
   const kpis = getMaintenanceKpis();
   const schedule = getMaintenanceSchedule();
+
+  if (loading) return <Loader />;
 
   const exportSchedule = () =>
     downloadCSV(

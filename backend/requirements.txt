@@ -1,0 +1,8 @@
+flask
+flask-cors
+python-dotenv
+supabase
+truststore
+joblib
+pandas
+scikit-learn==1.6.1

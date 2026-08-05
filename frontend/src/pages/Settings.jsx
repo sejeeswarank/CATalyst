@@ -15,9 +15,9 @@ export default function Settings() {
   const [name, setName] = useState('');
   const [lastCreated, setLastCreated] = useState(null);
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    const site = addSite(name);
+    const site = await addSite(name);
     if (site) {
       setLastCreated(site);
       setName('');

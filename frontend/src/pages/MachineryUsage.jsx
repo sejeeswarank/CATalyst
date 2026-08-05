@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Building2, Activity, Clock, Gauge, Truck, Search, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Building2, Clock, Gauge, Truck, Search, Eye } from 'lucide-react';
 import PageHero from '@/components/common/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import KpiCard from '@/components/dashboard/KpiCard';
@@ -7,10 +8,19 @@ import StatusBadge from '@/components/common/StatusBadge';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
-import { EQUIPMENT, SITES } from '@/data/mockData';
+import Button from '@/components/ui/button';
+import FuelTrendChart from '@/components/dashboard/charts/FuelTrendChart';
+import DowntimeBySiteChart from '@/components/dashboard/charts/DowntimeBySiteChart';
+import Loader from '@/components/Loader';
+import { useAppData } from '@/state/AppDataContext';
 import { cn } from '@/lib/utils';
 
 export default function MachineryUsage() {
+  const navigate = useNavigate();
+  const {
+    equipment: EQUIPMENT, sites: SITES, loading,
+    getFuelTrend, getDowntimeBySite,
+  } = useAppData();
   const [selectedSiteId, setSelectedSiteId] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -42,7 +52,7 @@ export default function MachineryUsage() {
         avgEfficiency,
       };
     });
-  }, []);
+  }, [EQUIPMENT, SITES]);
 
   const overallStats = useMemo(() => {
     const totalUnits = EQUIPMENT.length;
@@ -52,7 +62,7 @@ export default function MachineryUsage() {
       ? Math.round((totalEngineHrs / (totalEngineHrs + totalIdleHrs)) * 100) 
       : 0;
     return { totalUnits, totalEngineHrs, totalIdleHrs, avgEfficiency };
-  }, []);
+  }, [EQUIPMENT]);
 
   // Filtered equipment list
   const filteredEquipment = useMemo(() => {
@@ -67,7 +77,9 @@ export default function MachineryUsage() {
 
       return matchesSite && matchesStatus && matchesQuery;
     });
-  }, [selectedSiteId, statusFilter, searchQuery]);
+  }, [EQUIPMENT, selectedSiteId, statusFilter, searchQuery]);
+
+  if (loading) return <Loader />;
 
   return (
     <div className="space-y-6 pb-8">
@@ -83,6 +95,30 @@ export default function MachineryUsage() {
         <KpiCard icon={Truck} label="Deployed Fleet" value={overallStats.totalUnits} tone="default" />
         <KpiCard icon={Clock} label="Engine Hours Today" value={`${overallStats.totalEngineHrs.toFixed(1)}h`} tone="success" />
         <KpiCard icon={Gauge} label="Fleet Efficiency" value={`${overallStats.avgEfficiency}%`} tone={overallStats.avgEfficiency > 65 ? 'success' : 'warning'} />
+      </div>
+
+      {/* Usage telemetry charts */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Fuel Usage &amp; Engine Hours (Last 7 Days)</CardTitle></CardHeader>
+          <CardContent>
+            <FuelTrendChart data={getFuelTrend()} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div>
+              <CardTitle>Downtime by Site</CardTitle>
+              <p className="mt-1 text-xs text-cat-slate">
+                Idle hours today, plus 8h assumed per machine in maintenance.
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <DowntimeBySiteChart data={getDowntimeBySite()} />
+          </CardContent>
+        </Card>
       </div>
 
       {/* Per Site Summary Cards */}
@@ -148,7 +184,7 @@ export default function MachineryUsage() {
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle>Equipment Telemetry & Usage Logs</CardTitle>
+            <CardTitle>Equipment Telemetry &amp; Usage Logs</CardTitle>
             <p className="text-xs text-cat-slate mt-1">
               Showing {filteredEquipment.length} machines {selectedSiteId !== 'ALL' ? `filtered by ${selectedSiteId}` : 'across all sites'}
             </p>
@@ -193,12 +229,13 @@ export default function MachineryUsage() {
                 <TR>
                   <TH>Equipment ID</TH>
                   <TH>Vehicle Type</TH>
-                  <TH>Site ID & Name</TH>
+                  <TH>Site ID &amp; Name</TH>
                   <TH>Status</TH>
                   <TH>Operator ID</TH>
                   <TH>Engine Hours Today</TH>
                   <TH>Idle Hours Today</TH>
                   <TH>Usage Efficiency</TH>
+                  <TH className="text-right">Actions</TH>
                 </TR>
               </THead>
               <TBody>
@@ -238,12 +275,17 @@ export default function MachineryUsage() {
                           </div>
                         )}
                       </TD>
+                      <TD className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/equipment/${e.id}`)}>
+                          <Eye className="h-3.5 w-3.5" /> View Details
+                        </Button>
+                      </TD>
                     </TR>
                   );
                 })}
                 {filteredEquipment.length === 0 && (
                   <TR>
-                    <TD colSpan={8} className="py-10 text-center text-cat-slate">
+                    <TD colSpan={9} className="py-10 text-center text-cat-slate">
                       No machinery usage data found for the selected filters.
                     </TD>
                   </TR>

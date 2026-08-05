@@ -8,8 +8,8 @@ import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import Dialog from '@/components/ui/dialog';
 import PageHero from '@/components/common/PageHero';
-import { EQUIPMENT, REGIONS, VEHICLE_TYPES, TODAY } from '@/data/mockData';
-import { useAppData } from '@/state/AppDataContext';
+import Loader from '@/components/Loader';
+import { useAppData, REGIONS, VEHICLE_TYPES, TODAY } from '@/state/AppDataContext';
 import { formatDate, daysBetween } from '@/lib/utils';
 
 const todayISO = TODAY.toISOString().slice(0, 10);
@@ -21,7 +21,7 @@ const addDaysISO = (iso, days) => {
 };
 
 export default function CheckAvailability() {
-  const { sites } = useAppData();
+  const { sites, equipment, loading } = useAppData();
   const [startDate, setStartDate] = useState(todayISO);
   const [duration, setDuration] = useState(7);
   const [vehicleType, setVehicleType] = useState('All');
@@ -33,19 +33,19 @@ export default function CheckAvailability() {
   const [bookingTarget, setBookingTarget] = useState(null);
   const [confirmedId, setConfirmedId] = useState(null);
 
+  if (loading) return <Loader />;
+
   const runSearch = (e) => {
     e?.preventDefault();
 
-    const matches = EQUIPMENT.filter((eq) => {
-      if (eq.status === 'Maintenance') return false; // unavailable equipment never appears
+    const matches = equipment.filter((eq) => {
+      if (eq.status === 'Maintenance') return false;
       if (bookedIds.has(eq.id)) return false;
       if (vehicleType !== 'All' && eq.type !== vehicleType) return false;
       if (siteId !== 'All' && eq.siteId !== siteId) return false;
       if (region !== 'All' && eq.region !== region) return false;
 
       const availableFrom = eq.status === 'Available' ? TODAY : eq.checkInDate;
-      // date-only comparison (daysBetween zeroes time-of-day) so a machine
-      // freeing up "today" still matches a same-day request
       return daysBetween(availableFrom, startDate) >= 0;
     }).map((eq) => {
       const availableFrom = eq.status === 'Available' ? TODAY : eq.checkInDate;
