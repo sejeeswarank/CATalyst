@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   Boxes,
   Truck,
@@ -10,14 +10,15 @@ import {
   Users,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import Button from '@/components/ui/button';
 import PageHero from '@/components/common/PageHero';
+import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import KpiCard from '@/components/dashboard/KpiCard';
 import AssetTable from '@/components/dashboard/AssetTable';
 import { EQUIPMENT, getKpis } from '@/data/mockData';
 
 export default function Dashboard() {
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
   const kpis = getKpis();
 
   const kpiCards = [
@@ -37,11 +38,7 @@ export default function Dashboard() {
         eyebrow="Fleet Operations"
         title="Fleet Dashboard"
         subtitle="Live overview of every machine across all sites."
-        action={
-          <Button variant="primary" onClick={() => navigate('/availability')}>
-            Check Availability Status
-          </Button>
-        }
+        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -53,12 +50,9 @@ export default function Dashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Equipment Fleet</CardTitle>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/equipment')}>
-            View all equipment →
-          </Button>
         </CardHeader>
         <CardContent>
-          <AssetTable data={EQUIPMENT} limit={8} />
+          <AssetTable data={EQUIPMENT} filterable paginated pageSize={10} initialQuery={initialQuery} />
         </CardContent>
       </Card>
     </div>

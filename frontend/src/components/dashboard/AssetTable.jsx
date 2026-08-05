@@ -11,8 +11,7 @@ import { formatDate, cn } from '@/lib/utils';
 const STATUS_OPTIONS = ['All', 'Running', 'Idle', 'Available', 'Maintenance'];
 
 function matchesView(e, view) {
-  if (view === 'booked') return e.isRented;
-  if (view === 'free') return e.status === 'Available';
+  if (view === 'booked') return e.isRented && e.status !== 'Running';
   if (view === 'using') return e.isRented && e.status === 'Running';
   return true;
 }
@@ -27,9 +26,8 @@ export default function AssetTable({ data, filterable = false, paginated = false
   const views = useMemo(
     () => [
       { key: 'all', label: 'All Equipment', count: data.length },
-      { key: 'booked', label: 'Booked', count: data.filter((e) => matchesView(e, 'booked')).length },
-      { key: 'free', label: 'Free', count: data.filter((e) => matchesView(e, 'free')).length },
       { key: 'using', label: 'Booked & Using', count: data.filter((e) => matchesView(e, 'using')).length },
+      { key: 'booked', label: 'Booked & Not Using', count: data.filter((e) => matchesView(e, 'booked')).length },
     ],
     [data]
   );
@@ -115,7 +113,7 @@ export default function AssetTable({ data, filterable = false, paginated = false
               <TH>Check-Out</TH>
               <TH>Engine Hrs Today</TH>
               <TH>Idle Hrs Today</TH>
-              <TH>Rental Days Left</TH>
+              <TH>Rental Days</TH>
               <TH className="text-right">Actions</TH>
             </TR>
           </THead>

@@ -6,11 +6,11 @@ import { cn, timeAgo } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', end: true },
-  { to: '/equipment', label: 'Equipment' },
   { to: '/availability', label: 'Check Availability' },
   { to: '/alerts', label: 'Alerts' },
   { to: '/analytics', label: 'Analytics' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/forecast', label: 'Demand Forecast' },
+  { to: '/settings', label: 'Fleet Setup' },
 ];
 
 export default function Header() {
@@ -23,7 +23,7 @@ export default function Header() {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    navigate(`/equipment?q=${encodeURIComponent(query)}`);
+    navigate(`/?q=${encodeURIComponent(query)}`);
   };
 
   return (

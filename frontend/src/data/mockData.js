@@ -71,6 +71,36 @@ export const SITES = SITE_NAMES.map((name, i) => ({
   region: REGIONS[i % REGIONS.length],
 }));
 
+// Generates a random unique site ID given whatever sites currently exist.
+export function nextSiteId(existingSites) {
+  const existingIds = new Set(existingSites.map((s) => s.id));
+  let id;
+  do {
+    const num = Math.floor(Math.random() * 900) + 100;
+    id = `ST${num}`;
+  } while (existingIds.has(id));
+  return id;
+}
+
+export function nextOperatorId(existingOperators) {
+  const max = existingOperators.reduce((m, o) => {
+    const n = Number(String(o.id).replace(/\D/g, ''));
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 100);
+  return `OP${max + 1}`;
+}
+
+const ZONES = ['North Pit', 'South Pit', 'Loading Bay', 'Maintenance Bay', 'Perimeter Road', 'Crusher Station', 'Fuel Depot'];
+
+const MAINTENANCE_REASONS = [
+  'Engine inspection',
+  'Hydraulic leak repair',
+  'Brake system check',
+  'Scheduled service',
+  'Tire / track replacement',
+  'Electrical fault',
+];
+
 const FIRST_NAMES = ['James', 'Maria', 'Robert', 'Linda', 'Michael', 'Patricia', 'David', 'Barbara', 'John', 'Elizabeth', 'Carlos', 'Sofia', 'Daniel', 'Emma', 'Thomas', 'Olivia', 'Kevin', 'Grace', 'Steven', 'Nina'];
 const LAST_NAMES = ['Carter', 'Nguyen', 'Smith', 'Johnson', 'Brown', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Lee', 'Walker', 'Hall', 'Young', 'King', 'Wright', 'Scott', 'Torres', 'Green', 'Adams'];
 
@@ -125,6 +155,14 @@ export const EQUIPMENT = Array.from({ length: 50 }, (_, i) => {
     checkInDate = addDays(TODAY, -randInt(1, 15));
   }
 
+  // maintenance / service schedule — every machine has one, independent of
+  // current rental state, so "days since service" is meaningful fleet-wide
+  const serviceIntervalDays = 120;
+  const daysSinceService = isMaintenance ? randInt(115, 160) : randInt(0, 130);
+  const lastServiceDate = addDays(TODAY, -daysSinceService);
+  const nextServiceDue = addDays(lastServiceDate, serviceIntervalDays);
+  const maintenanceReason = isMaintenance ? pick(MAINTENANCE_REASONS) : null;
+
   return {
     id,
     type,
@@ -143,12 +181,22 @@ export const EQUIPMENT = Array.from({ length: 50 }, (_, i) => {
     isOffline: !isMaintenance && chance(0.06),
     gpsLost: !isMaintenance && chance(0.05),
     lastReturnedLate,
+    lastServiceDate,
+    nextServiceDue,
+    daysUntilService: Math.round((nextServiceDue - TODAY) / 86400000),
+    maintenanceReason,
     history: Array.from({ length: 7 }, (_, d) => {
       const base = isRented ? (status === 'Running' ? 6 : 2) : 1;
+      const dailyEngineHours = Math.max(0, randFloat(base - 2.5, base + 3, 1));
+      const dailyIdleHours = Math.max(0, randFloat(0.5, 5, 1));
+      const date = addDays(TODAY, d - 6);
       return {
-        day: addDays(TODAY, d - 6).toLocaleDateString('en-US', { weekday: 'short' }),
-        engineHours: Math.max(0, randFloat(base - 2.5, base + 3, 1)),
-        idleHours: Math.max(0, randFloat(0.5, 5, 1)),
+        date,
+        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        engineHours: dailyEngineHours,
+        idleHours: dailyIdleHours,
+        fuelUsage: Math.max(0, randFloat(dailyEngineHours * 3.2, dailyEngineHours * 5.4 + 1, 1)),
+        location: `${site.name} — ${pick(ZONES)}`,
       };
     }),
     rentalHistory: Array.from({ length: randInt(2, 4) }, (_, r) => {
@@ -271,6 +319,18 @@ function buildAlerts() {
 
 export const ALERTS = buildAlerts();
 
+const RENTAL_ALERT_TYPES = ['Rental Expiring Tomorrow', 'Rental Overdue'];
+
+// Alerts about the rental clock (ending soon / overdue) vs. everything else
+// (machine condition, telemetry, staffing) — split for the two Dashboard sections.
+export function getRentalAlerts() {
+  return ALERTS.filter((a) => RENTAL_ALERT_TYPES.includes(a.type));
+}
+
+export function getEquipmentAlerts() {
+  return ALERTS.filter((a) => !RENTAL_ALERT_TYPES.includes(a.type));
+}
+
 export function getAlertKpis() {
   const total = ALERTS.length;
   const critical = ALERTS.filter((a) => a.status === 'Active' && a.severity === 'critical').length;
@@ -303,3 +363,25 @@ function buildActivity() {
 }
 
 export const ACTIVITY = buildActivity();
+
+// ---- vehicle maintenance analysis (Analytics page) ----
+export function getMaintenanceKpis() {
+  const inMaintenance = EQUIPMENT.filter((e) => e.status === 'Maintenance').length;
+  const overdue = EQUIPMENT.filter((e) => e.daysUntilService < 0).length;
+  const dueThisWeek = EQUIPMENT.filter((e) => e.daysUntilService >= 0 && e.daysUntilService <= 7).length;
+  const avgDaysSinceService = Math.round(
+    EQUIPMENT.reduce((sum, e) => sum + Math.round((TODAY - e.lastServiceDate) / 86400000), 0) / EQUIPMENT.length
+  );
+  return { inMaintenance, overdue, dueThisWeek, avgDaysSinceService };
+}
+
+export function getMaintenanceByType() {
+  return VEHICLE_TYPES.map((type) => ({
+    name: type,
+    value: EQUIPMENT.filter((e) => e.type === type && (e.status === 'Maintenance' || e.daysUntilService < 0)).length,
+  })).filter((row) => row.value > 0);
+}
+
+export function getMaintenanceSchedule() {
+  return [...EQUIPMENT].sort((a, b) => a.daysUntilService - b.daysUntilService);
+}

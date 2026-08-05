@@ -8,7 +8,9 @@ import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import Dialog from '@/components/ui/dialog';
 import PageHero from '@/components/common/PageHero';
-import { EQUIPMENT, SITES, REGIONS, VEHICLE_TYPES, TODAY } from '@/data/mockData';
+import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
+import { EQUIPMENT, REGIONS, VEHICLE_TYPES, TODAY } from '@/data/mockData';
+import { useAppData } from '@/state/AppDataContext';
 import { formatDate, daysBetween } from '@/lib/utils';
 
 const todayISO = TODAY.toISOString().slice(0, 10);
@@ -20,6 +22,7 @@ const addDaysISO = (iso, days) => {
 };
 
 export default function CheckAvailability() {
+  const { sites } = useAppData();
   const [startDate, setStartDate] = useState(todayISO);
   const [duration, setDuration] = useState(7);
   const [vehicleType, setVehicleType] = useState('All');
@@ -72,6 +75,7 @@ export default function CheckAvailability() {
         eyebrow="Rental Booking"
         title="Check Availability Status"
         subtitle="Match a client's requirement — machine type, date needed and rental timeline — against the live fleet."
+        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <Card>
@@ -104,7 +108,7 @@ export default function CheckAvailability() {
               </label>
               <Select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
                 <option value="All">All sites</option>
-                {SITES.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
             </div>
             <div>

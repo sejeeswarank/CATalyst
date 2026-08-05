@@ -1,6 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Truck, MapPin, User, DollarSign, CalendarClock } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
@@ -8,26 +7,6 @@ import StatusBadge from '@/components/common/StatusBadge';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import { getEquipmentById } from '@/data/mockData';
 import { formatDate } from '@/lib/utils';
-
-function MiniChart({ data, dataKey, color }) {
-  return (
-    <ResponsiveContainer width="100%" height={220}>
-      <AreaChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-        <defs>
-          <linearGradient id={`grad-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-            <stop offset="100%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E5E7" />
-        <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#3A3A3E' }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 11, fill: '#3A3A3E' }} axisLine={false} tickLine={false} />
-        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #E5E5E7', fontSize: 13 }} />
-        <Area type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} fill={`url(#grad-${dataKey})`} />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
 
 export default function EquipmentDetails() {
   const { id } = useParams();
@@ -38,7 +17,7 @@ export default function EquipmentDetails() {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
         <p className="text-lg font-semibold text-cat-black">Equipment "{id}" not found</p>
-        <Button variant="primary" onClick={() => navigate('/equipment')}>Back to Equipment</Button>
+        <Button variant="primary" onClick={() => navigate('/')}>Back to Dashboard</Button>
       </div>
     );
   }
@@ -58,8 +37,8 @@ export default function EquipmentDetails() {
 
   return (
     <div className="space-y-6">
-      <Link to="/equipment" className="inline-flex items-center gap-1.5 text-sm font-medium text-cat-slate hover:text-cat-black">
-        <ArrowLeft className="h-4 w-4" /> Back to Equipment
+      <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-cat-slate hover:text-cat-black">
+        <ArrowLeft className="h-4 w-4" /> Back to Dashboard
       </Link>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -87,22 +66,41 @@ export default function EquipmentDetails() {
               label="Rental Window"
               value={equipment.isRented ? `${formatDate(equipment.checkOutDate)} → ${formatDate(equipment.checkInDate)}` : 'Not currently rented'}
             />
-            <InfoRow icon={CalendarClock} label="Rental Days Left" value={equipment.rentalDaysLeft ?? '—'} />
+            <InfoRow icon={CalendarClock} label="Rental Days" value={equipment.rentalDaysLeft ?? '—'} />
             <InfoRow icon={CalendarClock} label="Engine / Idle Hours Today" value={`${equipment.engineHoursToday.toFixed(1)}h / ${equipment.idleHoursToday.toFixed(1)}h`} />
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>Engine Hours (Last 7 Days)</CardTitle></CardHeader>
-          <CardContent><MiniChart data={equipment.history} dataKey="engineHours" color="#16A34A" /></CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Idle Hours (Last 7 Days)</CardTitle></CardHeader>
-          <CardContent><MiniChart data={equipment.history} dataKey="idleHours" color="#F59E0B" /></CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader><CardTitle>Daily Usage (Last 7 Days)</CardTitle></CardHeader>
+        <CardContent>
+          <div className="rounded-2xl border border-border">
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Date</TH>
+                  <TH>Engine Hours</TH>
+                  <TH>Idle Hours</TH>
+                  <TH>Fuel Usage</TH>
+                  <TH>Location</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {equipment.history.map((h, i) => (
+                  <TR key={i}>
+                    <TD className="font-medium text-cat-black">{formatDate(h.date)}</TD>
+                    <TD>{h.engineHours.toFixed(1)}h</TD>
+                    <TD>{h.idleHours.toFixed(1)}h</TD>
+                    <TD>{h.fuelUsage.toFixed(1)} L</TD>
+                    <TD className="text-cat-slate">{h.location}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle>Rental History</CardTitle></CardHeader>
