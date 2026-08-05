@@ -1,29 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { AlertOctagon, AlertTriangle, CheckCircle2, ListFilter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
-import Select from '@/components/ui/select';
 import PageHero from '@/components/common/PageHero';
+import ExcavatorGraphic from '@/components/common/ExcavatorGraphic';
 import KpiCard from '@/components/dashboard/KpiCard';
-import StatusBadge, { SeverityLabel } from '@/components/common/SeverityBadge';
-import { ALERTS, getAlertKpis } from '@/data/mockData';
-import { formatDate } from '@/lib/utils';
-
-const STATUS_OPTIONS = ['All', 'Active', 'Resolved'];
-const SEVERITY_OPTIONS = ['All', 'critical', 'warning'];
+import AlertsMiniTable from '@/components/dashboard/AlertsMiniTable';
+import { getAlertKpis, getRentalAlerts, getEquipmentAlerts } from '@/data/mockData';
+import { cn } from '@/lib/utils';
 
 export default function Alerts() {
   const kpis = getAlertKpis();
-  const [status, setStatus] = useState('All');
-  const [severity, setSeverity] = useState('All');
+  const [view, setView] = useState('rental');
 
-  const filtered = useMemo(() => {
-    return ALERTS.filter((a) => {
-      if (status !== 'All' && a.status !== status) return false;
-      if (severity !== 'All' && a.severity !== severity) return false;
-      return true;
-    });
-  }, [status, severity]);
+  const rentalAlerts = getRentalAlerts();
+  const equipmentAlerts = getEquipmentAlerts();
+  const activeAlerts = view === 'rental' ? rentalAlerts : equipmentAlerts;
 
   return (
     <div className="space-y-6">
@@ -31,6 +22,7 @@ export default function Alerts() {
         eyebrow="Fleet Monitoring"
         title="Alerts & Anomalies"
         subtitle="Rule-based alerts generated from live fleet telemetry."
+        illustration={<ExcavatorGraphic className="w-full" />}
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -42,56 +34,34 @@ export default function Alerts() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Alerts</CardTitle>
-          <div className="flex gap-2">
-            <Select value={severity} onChange={(e) => setSeverity(e.target.value)} className="w-40">
-              {SEVERITY_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s === 'All' ? 'All severities' : s === 'critical' ? 'Critical' : 'Warning'}</option>
-              ))}
-            </Select>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-36">
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s === 'All' ? 'All statuses' : s}</option>
-              ))}
-            </Select>
-          </div>
+          <CardTitle>{view === 'rental' ? 'Rental Alerts' : 'Equipment Alerts'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-2xl border border-border">
-            <Table>
-              <THead>
-                <TR>
-                  <TH>Alert Type</TH>
-                  <TH>Equipment ID</TH>
-                  <TH>Vehicle</TH>
-                  <TH>Site</TH>
-                  <TH>Severity</TH>
-                  <TH>Timestamp</TH>
-                  <TH>Status</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {filtered.map((a) => (
-                  <TR key={a.id}>
-                    <TD className="font-medium text-cat-black">{a.type}</TD>
-                    <TD>{a.equipmentId}</TD>
-                    <TD>{a.vehicle}</TD>
-                    <TD>{a.site}</TD>
-                    <TD><SeverityLabel severity={a.severity} /></TD>
-                    <TD className="text-cat-slate">{formatDate(a.timestamp)}</TD>
-                    <TD><StatusBadge severity={a.severity} status={a.status} /></TD>
-                  </TR>
-                ))}
-                {filtered.length === 0 && (
-                  <TR>
-                    <TD colSpan={7} className="py-10 text-center text-cat-slate">
-                      No alerts match these filters.
-                    </TD>
-                  </TR>
-                )}
-              </TBody>
-            </Table>
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setView('rental')}
+              className={cn(
+                'rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors',
+                view === 'rental' ? 'bg-cat-yellow text-cat-black' : 'bg-background text-cat-slate hover:bg-cat-black/5'
+              )}
+            >
+              Rental Alerts <span className="opacity-70">({rentalAlerts.length})</span>
+            </button>
+            <button
+              onClick={() => setView('equipment')}
+              className={cn(
+                'rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors',
+                view === 'equipment' ? 'bg-cat-yellow text-cat-black' : 'bg-background text-cat-slate hover:bg-cat-black/5'
+              )}
+            >
+              Equipment Alerts <span className="opacity-70">({equipmentAlerts.length})</span>
+            </button>
           </div>
+
+          <AlertsMiniTable
+            alerts={activeAlerts}
+            emptyLabel={view === 'rental' ? 'No rentals ending soon or overdue.' : 'No equipment alerts right now.'}
+          />
         </CardContent>
       </Card>
     </div>

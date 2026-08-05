@@ -1,7 +1,7 @@
 // PageHero.jsx — full-bleed dark banner used under the navbar, echoing
 // Caterpillar's investor-relations page headers (bold uppercase title over a
 // dark image-style band with a yellow accent).
-export default function PageHero({ eyebrow, title, subtitle, action }) {
+export default function PageHero({ eyebrow, title, subtitle, action, illustration }) {
   return (
     <div className="relative -mx-6 -mt-6 mb-6 overflow-hidden bg-gradient-to-br from-cat-black via-cat-ink to-cat-charcoal px-8 py-12 text-white sm:px-12">
       <div
@@ -20,8 +20,14 @@ export default function PageHero({ eyebrow, title, subtitle, action }) {
         }}
       />
 
+      {illustration && (
+        <div className="pointer-events-none absolute -right-6 bottom-0 hidden w-72 md:block lg:w-96">
+          {illustration}
+        </div>
+      )}
+
       <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="md:max-w-[55%]">
           {eyebrow && (
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-cat-yellow">{eyebrow}</p>
           )}
@@ -30,7 +36,7 @@ export default function PageHero({ eyebrow, title, subtitle, action }) {
           </h1>
           {subtitle && <p className="mt-2 max-w-xl text-sm normal-case text-white/70">{subtitle}</p>}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        {action && <div className="relative shrink-0">{action}</div>}
       </div>
     </div>
   );

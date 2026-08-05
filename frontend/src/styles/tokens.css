@@ -1,0 +1,41 @@
+/* tokens.css — import this once at the app root. Do not redefine colors elsewhere. */
+
+:root {
+  /* Colors */
+  --cat-yellow: #FFC500;
+  --cat-black: #101010;
+  --cat-gray-dark: #2b2b2b;
+  --cat-gray-light: #f4f4f4;
+  --cat-white: #ffffff;
+
+  /* Typography */
+  --font-display: 'Anton', 'Archivo Black', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Motion */
+  --ease-mech: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 150ms;
+  --duration-med: 300ms;
+
+  /* Shape */
+  --radius: 4px;
+  --shadow-press: inset 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-card: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--cat-gray-light);
+  color: var(--cat-black);
+  margin: 0;
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Google Fonts import — add to index.html <head> instead if preferred:
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+*/
