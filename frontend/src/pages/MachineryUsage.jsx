@@ -87,6 +87,7 @@ export default function MachineryUsage() {
         eyebrow="Fleet Analytics"
         title="Machinery Usage per Site"
         subtitle="Comprehensive telemetry, engine runtime, and idle metrics tracked per job site location."
+        bgImage="/hero-equipment.png"
       />
 
       {/* Fleet Overview KPIs */}

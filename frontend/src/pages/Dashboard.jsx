@@ -47,6 +47,7 @@ export default function Dashboard() {
         eyebrow="Fleet Operations"
         title="Fleet Dashboard"
         subtitle="Live overview of every machine across all sites."
+        bgImage="/hero-equipment.png"
       />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">

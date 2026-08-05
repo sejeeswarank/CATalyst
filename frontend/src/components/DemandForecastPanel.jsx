@@ -53,6 +53,7 @@ export default function DemandForecastPanel() {
         eyebrow="Predictive Analytics"
         title="Demand Forecast"
         subtitle="7-day equipment demand predicted by the trained model from historical site data."
+        bgImage="/hero-equipment.png"
       />
 
       {loading ? (

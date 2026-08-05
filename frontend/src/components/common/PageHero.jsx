@@ -1,7 +1,8 @@
 // PageHero.jsx — full-bleed dark banner used under the navbar, echoing
 // Caterpillar's investor-relations page headers (bold uppercase title over a
-// dark image-style band with a yellow accent).
-export default function PageHero({ eyebrow, title, subtitle, action, illustration }) {
+// dark image-style band with a yellow accent). Optional bgImage adds equipment
+// photo on the right with gradient fade.
+export default function PageHero({ eyebrow, title, subtitle, action, illustration, bgImage }) {
   return (
     <div className="relative -mx-6 -mt-6 mb-6 overflow-hidden bg-gradient-to-br from-cat-black via-cat-ink to-cat-charcoal px-8 py-12 text-white sm:px-12">
       <div
@@ -12,6 +13,20 @@ export default function PageHero({ eyebrow, title, subtitle, action, illustratio
           backgroundSize: '32px 32px',
         }}
       />
+
+      {bgImage && (
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 w-1/2"
+          style={{
+            backgroundImage: `url('${bgImage}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center right',
+            mask: 'linear-gradient(to right, transparent 0%, black 40%, black 100%)',
+            WebkitMask: 'linear-gradient(to right, transparent 0%, black 40%, black 100%)',
+          }}
+        />
+      )}
+
       <div
         className="pointer-events-none absolute -right-10 top-0 h-full w-1/2 opacity-70"
         style={{

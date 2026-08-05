@@ -96,6 +96,7 @@ export default function CheckAvailability() {
         eyebrow="Rental Booking"
         title="Check Availability Status"
         subtitle="Match a client's requirement — machine type, date needed and rental timeline — against the live fleet. Booking reserves the machine in the garage; the gate RFID scan confirms it actually left."
+        bgImage="/hero-equipment.png"
       />
 
       <Card>

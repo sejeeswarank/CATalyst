@@ -37,7 +37,7 @@ export default function Header() {
             <path d="M0 24L14 0L28 24H18.5L14 16L9.5 24H0Z" fill="#FFC72C" />
           </svg>
           <span className="font-display text-lg tracking-tight text-cat-black">
-            CATALYST<sup className="text-[10px]">®</sup>
+            CATALYST
           </span>
         </div>
 
@@ -116,12 +116,6 @@ export default function Header() {
             )}
           </div>
 
-          <button className="flex items-center gap-2 rounded-lg border border-border py-1.5 pl-1.5 pr-2.5 hover:bg-background">
-            <div className="flex h-6.5 w-6.5 items-center justify-center rounded-full bg-cat-black text-cat-yellow">
-              <User className="h-3.5 w-3.5" />
-            </div>
-            <span className="hidden text-sm font-medium text-cat-black sm:inline">User</span>
-          </button>
         </div>
       </div>
 

@@ -49,7 +49,7 @@ export default function EquipmentDetails() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-            <VehicleIcon type={equipment.type} className="h-56 w-56" bg="bg-transparent" padded={false} />
+            <VehicleIcon type={equipment.type} className="h-80 w-80" bg="bg-transparent" padded={false} />
             <div>
               <h2 className="font-display text-xl text-cat-black">{equipment.id}</h2>
               <p className="text-sm normal-case text-cat-slate">{equipment.type}</p>

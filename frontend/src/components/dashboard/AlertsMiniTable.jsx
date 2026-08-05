@@ -3,6 +3,7 @@ import { Mail, Check, Send } from 'lucide-react';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
 import AlertStatusBadge from '@/components/common/SeverityBadge';
+import VehicleIcon from '@/components/common/VehicleIcon';
 import { timeAgo } from '@/lib/utils';
 
 export default function AlertsMiniTable({ alerts, isRentalView = false, emptyLabel = 'Nothing to show right now.' }) {
@@ -30,6 +31,7 @@ export default function AlertsMiniTable({ alerts, isRentalView = false, emptyLab
             <TR>
               <TH>Alert Type</TH>
               <TH>Equipment</TH>
+              <TH>Image</TH>
               <TH>Site</TH>
               {isRentalView && <TH>Rented By</TH>}
               <TH>Reported</TH>
@@ -42,6 +44,7 @@ export default function AlertsMiniTable({ alerts, isRentalView = false, emptyLab
               <TR key={a.id}>
                 <TD className="font-medium text-cat-black">{a.type}</TD>
                 <TD>{a.equipmentId} · {a.vehicle}</TD>
+                <TD><VehicleIcon type={a.vehicle} className="h-24 w-24" /></TD>
                 <TD>{a.site}</TD>
                 {isRentalView && (
                   <TD className="font-medium text-cat-black">{a.rentedBy || 'BuildRight Corp'}</TD>
@@ -70,7 +73,7 @@ export default function AlertsMiniTable({ alerts, isRentalView = false, emptyLab
             ))}
             {alerts.length === 0 && (
               <TR>
-                <TD colSpan={isRentalView ? 7 : 5} className="py-8 text-center text-cat-slate">{emptyLabel}</TD>
+                <TD colSpan={isRentalView ? 8 : 6} className="py-8 text-center text-cat-slate">{emptyLabel}</TD>
               </TR>
             )}
           </TBody>

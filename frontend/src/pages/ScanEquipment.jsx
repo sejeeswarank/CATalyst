@@ -92,6 +92,7 @@ export default function ScanEquipment() {
         eyebrow="Field Operations"
         title="Scan Equipment (RFID / QR Simulation)"
         subtitle="Tap a card to simulate a gate scan, or type a tag ID below — the write-back is identical to what a physical reader would trigger."
+        bgImage="/hero-equipment.png"
       />
 
       {toast && (

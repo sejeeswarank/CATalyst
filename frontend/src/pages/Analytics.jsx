@@ -5,6 +5,7 @@ import Button from '@/components/ui/button';
 import Badge from '@/components/ui/badge';
 import PageHero from '@/components/common/PageHero';
 import KpiCard from '@/components/dashboard/KpiCard';
+import VehicleIcon from '@/components/common/VehicleIcon';
 import Loader from '@/components/Loader';
 import { useAppData } from '@/state/AppDataContext';
 import { cn, formatDate, downloadCSV } from '@/lib/utils';
@@ -37,6 +38,7 @@ export default function Analytics() {
         eyebrow="Fleet Intelligence"
         title="Vehicle Maintenance Analysis"
         subtitle="Service schedules, overdue machines, and maintenance workload across the fleet."
+        bgImage="/hero-equipment.png"
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -60,6 +62,7 @@ export default function Analytics() {
                 <TR>
                   <TH>Equipment ID</TH>
                   <TH>Type</TH>
+                  <TH>Image</TH>
                   <TH>Site</TH>
                   <TH>Last Service</TH>
                   <TH>Next Service Due</TH>
@@ -71,6 +74,7 @@ export default function Analytics() {
                   <TR key={e.id}>
                     <TD className="font-semibold text-cat-black">{e.id}</TD>
                     <TD>{e.type}</TD>
+                    <TD><VehicleIcon type={e.type} className="h-24 w-24" /></TD>
                     <TD>{e.siteName}</TD>
                     <TD>{formatDate(e.lastServiceDate)}</TD>
                     <TD>{formatDate(e.nextServiceDue)}</TD>

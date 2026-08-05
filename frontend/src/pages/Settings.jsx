@@ -31,6 +31,7 @@ export default function Settings() {
         eyebrow="Onboarding"
         title="Fleet Setup"
         subtitle="Onboard the sites and operators your fleet runs on."
+        bgImage="/hero-equipment.png"
       />
 
       <Card>

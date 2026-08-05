@@ -25,6 +25,7 @@ export default function Alerts() {
         eyebrow="Fleet Monitoring"
         title="Alerts & Anomalies"
         subtitle="Rule-based alerts generated from live fleet telemetry."
+        bgImage="/hero-equipment.png"
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

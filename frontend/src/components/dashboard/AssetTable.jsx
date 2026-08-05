@@ -126,7 +126,7 @@ export default function AssetTable({ data, filterable = false, paginated = false
                 <TR key={e.id}>
                   <TD className="font-semibold text-cat-black">{e.id}</TD>
                   <TD>{e.type}</TD>
-                  <TD><VehicleIcon type={e.type} className="h-16 w-16" /></TD>
+                  <TD><VehicleIcon type={e.type} className="h-24 w-24" /></TD>
                   <TD>{e.siteId}</TD>
                   <TD><StatusBadge status={e.status} /></TD>
                   <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>
