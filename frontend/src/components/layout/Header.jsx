@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/analytics', label: 'Analytics' },
   { to: '/forecast', label: 'Demand Forecast' },
   { to: '/machinery-usage', label: 'Machinery Usage' },
+  { to: '/scan', label: 'Scan Equipment' },
   { to: '/settings', label: 'Fleet Setup' },
 ];
 

@@ -127,8 +127,8 @@ export default function AssetTable({ data, filterable = false, paginated = false
                   <TD>{e.siteId}</TD>
                   <TD><StatusBadge status={e.status} /></TD>
                   <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>
-                  <TD>{e.checkOutDate ? formatDate(e.checkOutDate) : '—'}</TD>
                   <TD>{e.checkInDate ? formatDate(e.checkInDate) : '—'}</TD>
+                  <TD>{e.checkOutDate ? formatDate(e.checkOutDate) : '—'}</TD>
                   <TD>
                     {isBookedNotUsing ? (
                       <span className="text-cat-slate">—</span>

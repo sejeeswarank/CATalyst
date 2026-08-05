@@ -199,6 +199,78 @@ export function AppDataProvider({ children }) {
     return operator;
   }, [operators]);
 
+  // Look up equipment by its RFID tag and flip it between checked-out
+  // (Running) and checked-in (Available). Maintenance units reject the scan.
+  // A real reader would emit the same tag string this function takes —
+  // the click-to-scan UI and a physical scan are indistinguishable from here.
+  const scanTag = useCallback(async (tagId) => {
+    const tag = tagId.trim();
+    if (!tag) return { ok: false, message: 'No tag provided.' };
+
+    const eq = equipment.find((e) => e.rfidTag?.toLowerCase() === tag.toLowerCase());
+    if (!eq) {
+      await supabase.from('scan_log').insert({ tag_id: tag, action: 'rejected', reason: 'Unknown tag' });
+      return { ok: false, message: `Tag ${tag} does not match any equipment.` };
+    }
+
+    if (eq.status === 'Maintenance') {
+      await supabase.from('scan_log').insert({
+        tag_id: tag, equipment_id: eq.id, action: 'rejected',
+        site_id: eq.siteId, reason: 'Equipment in maintenance',
+      });
+      return { ok: false, message: `${eq.id} is in maintenance and can't be checked out.`, equipment: eq };
+    }
+
+    const isCheckingOut = eq.status === 'Available';
+    const today = new Date();
+    const updates = isCheckingOut
+      ? { status: 'Running', is_rented: true, check_out_date: today.toISOString().slice(0, 10), check_in_date: null }
+      : { status: 'Available', is_rented: false, check_in_date: today.toISOString().slice(0, 10), operator_id: null, rented_by: null };
+
+    const { error } = await supabase.from('equipment').update(updates).eq('id', eq.id);
+    if (error) {
+      console.error('scanTag update error:', error);
+      return { ok: false, message: 'Failed to update equipment — see console.' };
+    }
+
+    await supabase.from('scan_log').insert({
+      tag_id: tag,
+      equipment_id: eq.id,
+      action: isCheckingOut ? 'check_out' : 'check_in',
+      site_id: eq.siteId,
+    });
+
+    const updatedEq = {
+      ...eq,
+      status: updates.status,
+      isRented: updates.is_rented,
+      checkOutDate: isCheckingOut ? today : eq.checkOutDate,
+      checkInDate: isCheckingOut ? null : today,
+      operatorId: isCheckingOut ? eq.operatorId : null,
+      rentedBy: isCheckingOut ? eq.rentedBy : null,
+    };
+    setEquipment((prev) => prev.map((e) => (e.id === eq.id ? updatedEq : e)));
+
+    return {
+      ok: true,
+      action: isCheckingOut ? 'check_out' : 'check_in',
+      equipment: updatedEq,
+      message: isCheckingOut
+        ? `${eq.id} checked out at ${eq.siteName}.`
+        : `${eq.id} checked in at ${eq.siteName}.`,
+    };
+  }, [equipment]);
+
+  const getRecentScans = useCallback(async (limit = 10) => {
+    const { data, error } = await supabase
+      .from('scan_log')
+      .select('*')
+      .order('scanned_at', { ascending: false })
+      .limit(limit);
+    if (error) { console.error('getRecentScans error:', error); return []; }
+    return data;
+  }, []);
+
   const value = useMemo(
     () => ({
       equipment, alerts, activity, sites, operators, loading,
@@ -207,7 +279,7 @@ export function AppDataProvider({ children }) {
       getMaintenanceKpis, getMaintenanceSchedule,
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
-      addSite, addOperator,
+      addSite, addOperator, scanTag, getRecentScans,
     }),
     [equipment, alerts, activity, sites, operators, loading,
       getKpis, getEquipmentById,
@@ -215,7 +287,7 @@ export function AppDataProvider({ children }) {
       getMaintenanceKpis, getMaintenanceSchedule,
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
-      addSite, addOperator],
+      addSite, addOperator, scanTag, getRecentScans],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
