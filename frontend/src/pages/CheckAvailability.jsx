@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, MapPin, CalendarCheck2, PackageSearch } from 'lucide-react';
+import { Search, MapPin, CalendarCheck2, PackageSearch, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Input from '@/components/ui/input';
@@ -10,7 +10,7 @@ import Dialog from '@/components/ui/dialog';
 import PageHero from '@/components/common/PageHero';
 import Loader from '@/components/Loader';
 import { useAppData, REGIONS, VEHICLE_TYPES, TODAY } from '@/state/AppDataContext';
-import { formatDate, daysBetween } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 
 const todayISO = TODAY.toISOString().slice(0, 10);
 
@@ -21,7 +21,7 @@ const addDaysISO = (iso, days) => {
 };
 
 export default function CheckAvailability() {
-  const { sites, equipment, loading } = useAppData();
+  const { sites, operators, equipment, loading, bookEquipment } = useAppData();
   const [startDate, setStartDate] = useState(todayISO);
   const [duration, setDuration] = useState(7);
   const [vehicleType, setVehicleType] = useState('All');
@@ -29,42 +29,64 @@ export default function CheckAvailability() {
   const [region, setRegion] = useState('All');
   const [searched, setSearched] = useState(false);
   const [results, setResults] = useState([]);
-  const [bookedIds, setBookedIds] = useState(new Set());
   const [bookingTarget, setBookingTarget] = useState(null);
-  const [confirmedId, setConfirmedId] = useState(null);
+  const [clientName, setClientName] = useState('');
+  const [assignedOperator, setAssignedOperator] = useState('');
+  const [bookingError, setBookingError] = useState('');
+  const [confirmed, setConfirmed] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <Loader />;
 
   const runSearch = (e) => {
     e?.preventDefault();
 
+    // Only currently in-garage (Available) equipment can be booked — a
+    // machine that's Running/Idle/Booked can't be reserved on top of its
+    // existing commitment, and Maintenance units are out of service.
     const matches = equipment.filter((eq) => {
-      if (eq.status === 'Maintenance') return false;
-      if (bookedIds.has(eq.id)) return false;
+      if (eq.status !== 'Available') return false;
       if (vehicleType !== 'All' && eq.type !== vehicleType) return false;
       if (siteId !== 'All' && eq.siteId !== siteId) return false;
       if (region !== 'All' && eq.region !== region) return false;
-
-      const availableFrom = eq.status === 'Available' ? TODAY : eq.checkInDate;
-      return daysBetween(availableFrom, startDate) >= 0;
-    }).map((eq) => {
-      const availableFrom = eq.status === 'Available' ? TODAY : eq.checkInDate;
-      return {
-        ...eq,
-        availableFrom,
-        expectedReturn: addDaysISO(startDate, Number(duration) || 1),
-      };
-    });
+      return true;
+    }).map((eq) => ({
+      ...eq,
+      availableFrom: TODAY,
+      expectedReturn: addDaysISO(startDate, Number(duration) || 1),
+    }));
 
     setResults(matches);
     setSearched(true);
   };
 
-  const confirmBooking = () => {
-    if (!bookingTarget) return;
-    setBookedIds((prev) => new Set(prev).add(bookingTarget.id));
+  const openBookingDialog = (target) => {
+    setBookingTarget(target);
+    setClientName('');
+    setAssignedOperator('');
+    setBookingError('');
+  };
+
+  const confirmBooking = async (e) => {
+    e.preventDefault();
+    if (!bookingTarget || !clientName.trim()) return;
+    setSubmitting(true);
+    setBookingError('');
+
+    const result = await bookEquipment(bookingTarget.id, {
+      client: clientName.trim(),
+      operatorId: assignedOperator || null,
+      expectedReturn: bookingTarget.expectedReturn,
+    });
+
+    setSubmitting(false);
+    if (!result.ok) {
+      setBookingError(result.message);
+      return;
+    }
+
     setResults((prev) => prev.filter((r) => r.id !== bookingTarget.id));
-    setConfirmedId(bookingTarget.id);
+    setConfirmed({ id: bookingTarget.id, client: clientName.trim() });
     setBookingTarget(null);
   };
 
@@ -73,7 +95,7 @@ export default function CheckAvailability() {
       <PageHero
         eyebrow="Rental Booking"
         title="Check Availability Status"
-        subtitle="Match a client's requirement — machine type, date needed and rental timeline — against the live fleet."
+        subtitle="Match a client's requirement — machine type, date needed and rental timeline — against the live fleet. Booking reserves the machine in the garage; the gate RFID scan confirms it actually left."
       />
 
       <Card>
@@ -153,7 +175,6 @@ export default function CheckAvailability() {
                       <TH>Current Site</TH>
                       <TH>Availability</TH>
                       <TH>Rental Price</TH>
-                      <TH>Available From</TH>
                       <TH>Expected Return</TH>
                       <TH className="text-right">Actions</TH>
                     </TR>
@@ -169,15 +190,12 @@ export default function CheckAvailability() {
                           </span>
                         </TD>
                         <TD>
-                          <Badge variant={r.status === 'Available' ? 'success' : 'info'} dot>
-                            {r.status === 'Available' ? 'Available Now' : `Free from ${formatDate(r.availableFrom)}`}
-                          </Badge>
+                          <Badge variant="success" dot>Available Now</Badge>
                         </TD>
                         <TD>${r.dailyRate}/day</TD>
-                        <TD>{formatDate(r.availableFrom)}</TD>
                         <TD>{formatDate(r.expectedReturn)}</TD>
                         <TD className="text-right">
-                          <Button size="sm" variant="primary" onClick={() => setBookingTarget(r)}>
+                          <Button size="sm" variant="primary" onClick={() => openBookingDialog(r)}>
                             <CalendarCheck2 className="h-3.5 w-3.5" /> Book
                           </Button>
                         </TD>
@@ -193,7 +211,7 @@ export default function CheckAvailability() {
 
       <Dialog open={!!bookingTarget} onClose={() => setBookingTarget(null)} title="Confirm Booking">
         {bookingTarget && (
-          <div className="space-y-3">
+          <form onSubmit={confirmBooking} className="space-y-3">
             <div className="rounded-xl bg-background p-4 text-sm">
               <div className="flex justify-between py-1"><span className="text-cat-slate">Equipment</span><span className="font-medium">{bookingTarget.id} · {bookingTarget.type}</span></div>
               <div className="flex justify-between py-1"><span className="text-cat-slate">Site</span><span className="font-medium">{bookingTarget.siteName}</span></div>
@@ -201,21 +219,65 @@ export default function CheckAvailability() {
               <div className="flex justify-between py-1"><span className="text-cat-slate">Duration</span><span className="font-medium">{duration} day(s)</span></div>
               <div className="flex justify-between py-1"><span className="text-cat-slate">Est. total</span><span className="font-medium">${(bookingTarget.dailyRate * Number(duration || 1)).toLocaleString()}</span></div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setBookingTarget(null)}>Cancel</Button>
-              <Button variant="primary" onClick={confirmBooking}>Confirm Booking</Button>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+                Client / Company Name
+              </label>
+              <Input
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                placeholder="e.g. BuildRight Corp"
+                autoFocus
+                required
+              />
             </div>
-          </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+                Assign Operator (optional)
+              </label>
+              <Select value={assignedOperator} onChange={(e) => setAssignedOperator(e.target.value)}>
+                <option value="">No operator assigned yet</option>
+                {operators.map((o) => <option key={o.id} value={o.id}>{o.id} — {o.name}</option>)}
+              </Select>
+            </div>
+
+            <p className="text-xs text-cat-slate">
+              This reserves the machine — it stays in the garage as <strong>Booked</strong> until the gate RFID scan
+              confirms it actually left, which is what stamps the real check-out date.
+            </p>
+
+            {bookingError && (
+              <div className="flex items-center gap-2 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
+                <AlertCircle className="h-4 w-4 shrink-0" /> {bookingError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setBookingTarget(null)}>Cancel</Button>
+              <Button type="submit" variant="primary" disabled={!clientName.trim() || submitting}>
+                {submitting ? 'Booking…' : 'Confirm Booking'}
+              </Button>
+            </div>
+          </form>
         )}
       </Dialog>
 
-      <Dialog open={!!confirmedId} onClose={() => setConfirmedId(null)} title="Booking Confirmed">
-        <p className="text-sm text-cat-slate">
-          <span className="font-semibold text-cat-black">{confirmedId}</span> has been reserved and removed from the available pool for this session.
-        </p>
-        <div className="mt-4 flex justify-end">
-          <Button variant="primary" onClick={() => setConfirmedId(null)}>Done</Button>
-        </div>
+      <Dialog open={!!confirmed} onClose={() => setConfirmed(null)} title="Booking Confirmed">
+        {confirmed && (
+          <>
+            <p className="text-sm text-cat-slate">
+              <span className="font-semibold text-cat-black">{confirmed.id}</span> is reserved for{' '}
+              <span className="font-semibold text-cat-black">{confirmed.client}</span> and marked{' '}
+              <strong>Booked</strong>. It stays in the garage until scanned out on the{' '}
+              <a href="/scan" className="text-cat-yellow-dark hover:underline">Scan Equipment</a> page.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <Button variant="primary" onClick={() => setConfirmed(null)}>Done</Button>
+            </div>
+          </>
+        )}
       </Dialog>
     </div>
   );

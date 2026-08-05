@@ -5,6 +5,7 @@ const STATUS_MAP = {
   Idle: 'warning',
   Available: 'info',
   Maintenance: 'danger',
+  Booked: 'yellow',
 };
 
 export default function StatusBadge({ status }) {

@@ -6,9 +6,10 @@ import Input from '@/components/ui/input';
 import Select from '@/components/ui/select';
 import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
+import VehicleIcon from '@/components/common/VehicleIcon';
 import { formatDate, cn } from '@/lib/utils';
 
-const STATUS_OPTIONS = ['All', 'Running', 'Idle', 'Available', 'Maintenance'];
+const STATUS_OPTIONS = ['All', 'Running', 'Idle', 'Available', 'Booked', 'Maintenance'];
 
 function matchesView(e, view) {
   if (view === 'booked') return e.isRented && e.status !== 'Running';
@@ -106,6 +107,7 @@ export default function AssetTable({ data, filterable = false, paginated = false
             <TR>
               <TH>Equipment ID</TH>
               <TH>Vehicle Type</TH>
+              <TH>Image</TH>
               <TH>Site ID</TH>
               <TH>Status</TH>
               <TH>Operator ID</TH>
@@ -124,6 +126,7 @@ export default function AssetTable({ data, filterable = false, paginated = false
                 <TR key={e.id}>
                   <TD className="font-semibold text-cat-black">{e.id}</TD>
                   <TD>{e.type}</TD>
+                  <TD><VehicleIcon type={e.type} className="h-16 w-16" /></TD>
                   <TD>{e.siteId}</TD>
                   <TD><StatusBadge status={e.status} /></TD>
                   <TD>{e.operatorId ?? <span className="text-cat-slate">—</span>}</TD>
@@ -156,7 +159,7 @@ export default function AssetTable({ data, filterable = false, paginated = false
             })}
             {pageRows.length === 0 && (
               <TR>
-                <TD colSpan={11} className="py-10 text-center text-cat-slate">
+                <TD colSpan={12} className="py-10 text-center text-cat-slate">
                   No equipment matches these filters.
                 </TD>
               </TR>

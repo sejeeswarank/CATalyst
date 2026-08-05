@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Nfc, Search, ScanLine, CheckCircle2, XCircle, History } from 'lucide-react';
+import { Nfc, Search, ScanLine, CheckCircle2, XCircle, AlertTriangle, History } from 'lucide-react';
 import PageHero from '@/components/common/PageHero';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Input from '@/components/ui/input';
@@ -7,7 +7,7 @@ import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
 import Loader from '@/components/Loader';
 import { useAppData } from '@/state/AppDataContext';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn, timeAgo, formatDate } from '@/lib/utils';
 
 // Short beep via Web Audio — mimics a real RFID reader's confirmation tone.
 // No external asset needed.
@@ -98,10 +98,16 @@ export default function ScanEquipment() {
         <div
           className={cn(
             'flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-md animate-fade-in',
-            toast.ok ? 'bg-cat-black text-cat-yellow' : 'bg-danger text-white'
+            toast.alert ? 'bg-danger text-white' : toast.ok ? 'bg-cat-black text-cat-yellow' : 'bg-danger text-white'
           )}
         >
-          {toast.ok ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+          {toast.alert ? (
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+          ) : toast.ok ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+          ) : (
+            <XCircle className="h-4 w-4 shrink-0" />
+          )}
           <span>{toast.message}</span>
         </div>
       )}
@@ -171,6 +177,16 @@ export default function ScanEquipment() {
                     <p className="text-[10px] uppercase tracking-wide text-cat-slate">Simulated RFID Tag</p>
                   </div>
 
+                  {e.status === 'Booked' && (
+                    <div className="rounded-lg bg-cat-yellow/10 px-3 py-2 text-xs">
+                      <p className="font-semibold text-cat-black">Booked for {e.pendingClient}</p>
+                      <p className="text-cat-slate">
+                        Expected return {e.pendingReturnDate ? formatDate(e.pendingReturnDate) : '—'}
+                        {e.pendingOperatorId ? ` · Operator ${e.pendingOperatorId}` : ''}
+                      </p>
+                    </div>
+                  )}
+
                   <Button
                     variant={disabled ? 'outline' : e.status === 'Available' ? 'primary' : 'secondary'}
                     size="sm"
@@ -183,6 +199,10 @@ export default function ScanEquipment() {
                       </>
                     ) : disabled ? (
                       'In Maintenance'
+                    ) : e.status === 'Booked' ? (
+                      <>
+                        <Nfc className="h-3.5 w-3.5" /> Confirm Departure
+                      </>
                     ) : (
                       <>
                         <Nfc className="h-3.5 w-3.5" /> Tap to Scan

@@ -199,10 +199,57 @@ export function AppDataProvider({ children }) {
     return operator;
   }, [operators]);
 
+  // Reserve equipment from the Check Availability page. This does NOT move
+  // the machine — it sits in the garage as 'Booked' with the renter's details
+  // held in the pending_* columns until an RFID scan confirms it actually
+  // left, at which point scanTag() promotes those into the real check-out
+  // record. Booked units are excluded from availability search (site+status).
+  const bookEquipment = useCallback(async (equipmentId, { client, operatorId, expectedReturn }) => {
+    const eq = equipment.find((e) => e.id === equipmentId);
+    if (!eq) return { ok: false, message: 'Equipment not found.' };
+    if (eq.status !== 'Available') return { ok: false, message: `${eq.id} is no longer available.` };
+
+    const returnDateISO = expectedReturn instanceof Date
+      ? expectedReturn.toISOString().slice(0, 10)
+      : expectedReturn;
+
+    const updates = {
+      status: 'Booked',
+      is_rented: true,
+      pending_client: client,
+      pending_operator_id: operatorId || null,
+      pending_return_date: returnDateISO,
+    };
+
+    const { error } = await supabase.from('equipment').update(updates).eq('id', eq.id);
+    if (error) {
+      console.error('bookEquipment error:', error);
+      return { ok: false, message: 'Failed to book equipment — see console.' };
+    }
+
+    const updatedEq = {
+      ...eq,
+      status: 'Booked',
+      isRented: true,
+      pendingClient: client,
+      pendingOperatorId: operatorId || null,
+      pendingReturnDate: expectedReturn instanceof Date ? expectedReturn : new Date(expectedReturn),
+    };
+    setEquipment((prev) => prev.map((e) => (e.id === eq.id ? updatedEq : e)));
+
+    return { ok: true, equipment: updatedEq, message: `${eq.id} booked for ${client}. Awaiting gate scan to confirm departure.` };
+  }, [equipment]);
+
   // Look up equipment by its RFID tag and flip it between checked-out
   // (Running) and checked-in (Available). Maintenance units reject the scan.
   // A real reader would emit the same tag string this function takes —
   // the click-to-scan UI and a physical scan are indistinguishable from here.
+  //
+  // 'Booked' units are a special case: the booking (made on Check
+  // Availability) already captured the renter, operator, and expected
+  // return date in the pending_* columns. The departure scan is what
+  // promotes those into the real check-out record — this is the "RFID
+  // updates check-in/check-out using the booking details" behavior.
   const scanTag = useCallback(async (tagId) => {
     const tag = tagId.trim();
     if (!tag) return { ok: false, message: 'No tag provided.' };
@@ -221,11 +268,30 @@ export function AppDataProvider({ children }) {
       return { ok: false, message: `${eq.id} is in maintenance and can't be checked out.`, equipment: eq };
     }
 
-    const isCheckingOut = eq.status === 'Available';
+    const isBookedDeparture = eq.status === 'Booked';
+    const isCheckingOut = isBookedDeparture || eq.status === 'Available';
     const today = new Date();
-    const updates = isCheckingOut
-      ? { status: 'Running', is_rented: true, check_out_date: today.toISOString().slice(0, 10), check_in_date: null }
-      : { status: 'Available', is_rented: false, check_in_date: today.toISOString().slice(0, 10), operator_id: null, rented_by: null };
+    const todayISO = today.toISOString().slice(0, 10);
+
+    let updates;
+    if (isBookedDeparture) {
+      updates = {
+        status: 'Running',
+        is_rented: true,
+        check_out_date: todayISO,
+        check_in_date: eq.pendingReturnDate ? eq.pendingReturnDate.toISOString().slice(0, 10) : null,
+        rented_by: eq.pendingClient,
+        operator_id: eq.pendingOperatorId,
+        pending_client: null,
+        pending_operator_id: null,
+        pending_return_date: null,
+      };
+    } else if (isCheckingOut) {
+      // Walk-up checkout with no prior booking — no known return date yet.
+      updates = { status: 'Running', is_rented: true, check_out_date: todayISO, check_in_date: null };
+    } else {
+      updates = { status: 'Available', is_rented: false, check_in_date: todayISO, operator_id: null, rented_by: null };
+    }
 
     const { error } = await supabase.from('equipment').update(updates).eq('id', eq.id);
     if (error) {
@@ -240,23 +306,64 @@ export function AppDataProvider({ children }) {
       site_id: eq.siteId,
     });
 
+    // A machine leaving the garage with no booking on file skipped the
+    // reservation step entirely — flag it the same way other rule-based
+    // fleet alerts are raised, so it shows up on the Alerts page and the
+    // header bell without anyone having to notice it manually.
+    let newAlert = null;
+    const isUnbookedCheckout = isCheckingOut && !isBookedDeparture;
+    if (isUnbookedCheckout) {
+      const alertId = `AL-SCAN-${eq.id}-${Date.now()}`;
+      const { error: alertError } = await supabase.from('alerts').insert({
+        id: alertId,
+        type: 'Checked Out Without Booking',
+        equipment_id: eq.id,
+        severity: 'critical',
+        status: 'Active',
+        timestamp: today.toISOString(),
+      });
+      if (alertError) {
+        console.error('scanTag alert insert error:', alertError);
+      } else {
+        newAlert = {
+          id: alertId,
+          type: 'Checked Out Without Booking',
+          equipmentId: eq.id,
+          vehicle: eq.type,
+          site: eq.siteName,
+          severity: 'critical',
+          status: 'Active',
+          timestamp: today,
+        };
+      }
+    }
+
     const updatedEq = {
       ...eq,
       status: updates.status,
       isRented: updates.is_rented,
       checkOutDate: isCheckingOut ? today : eq.checkOutDate,
-      checkInDate: isCheckingOut ? null : today,
-      operatorId: isCheckingOut ? eq.operatorId : null,
-      rentedBy: isCheckingOut ? eq.rentedBy : null,
+      checkInDate: isBookedDeparture
+        ? eq.pendingReturnDate
+        : isCheckingOut ? null : today,
+      operatorId: isBookedDeparture ? eq.pendingOperatorId : isCheckingOut ? eq.operatorId : null,
+      rentedBy: isBookedDeparture ? eq.pendingClient : isCheckingOut ? eq.rentedBy : null,
+      pendingClient: isCheckingOut ? null : eq.pendingClient,
+      pendingOperatorId: isCheckingOut ? null : eq.pendingOperatorId,
+      pendingReturnDate: isCheckingOut ? null : eq.pendingReturnDate,
     };
     setEquipment((prev) => prev.map((e) => (e.id === eq.id ? updatedEq : e)));
+    if (newAlert) setAlerts((prev) => [newAlert, ...prev]);
 
     return {
       ok: true,
       action: isCheckingOut ? 'check_out' : 'check_in',
       equipment: updatedEq,
+      alert: newAlert,
       message: isCheckingOut
-        ? `${eq.id} checked out at ${eq.siteName}.`
+        ? isBookedDeparture
+          ? `${eq.id} checked out at ${eq.siteName} for ${eq.pendingClient}.`
+          : `${eq.id} checked out at ${eq.siteName} — no booking on file, alert raised.`
         : `${eq.id} checked in at ${eq.siteName}.`,
     };
   }, [equipment]);
@@ -279,7 +386,7 @@ export function AppDataProvider({ children }) {
       getMaintenanceKpis, getMaintenanceSchedule,
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
-      addSite, addOperator, scanTag, getRecentScans,
+      addSite, addOperator, scanTag, getRecentScans, bookEquipment,
     }),
     [equipment, alerts, activity, sites, operators, loading,
       getKpis, getEquipmentById,
@@ -287,7 +394,7 @@ export function AppDataProvider({ children }) {
       getMaintenanceKpis, getMaintenanceSchedule,
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
-      addSite, addOperator, scanTag, getRecentScans],
+      addSite, addOperator, scanTag, getRecentScans, bookEquipment],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

@@ -1,9 +1,10 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Truck, MapPin, User, DollarSign, CalendarClock } from 'lucide-react';
+import { ArrowLeft, MapPin, User, DollarSign, CalendarClock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
 import StatusBadge from '@/components/common/StatusBadge';
+import VehicleIcon from '@/components/common/VehicleIcon';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import Loader from '@/components/Loader';
 import { useAppData } from '@/state/AppDataContext';
@@ -48,9 +49,7 @@ export default function EquipmentDetails() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
-            <div className="flex h-32 w-32 items-center justify-center rounded-2xl bg-gradient-to-br from-cat-black to-cat-charcoal">
-              <Truck className="h-14 w-14 text-cat-yellow" />
-            </div>
+            <VehicleIcon type={equipment.type} className="h-56 w-56" bg="bg-transparent" padded={false} />
             <div>
               <h2 className="font-display text-xl text-cat-black">{equipment.id}</h2>
               <p className="text-sm normal-case text-cat-slate">{equipment.type}</p>
@@ -64,6 +63,7 @@ export default function EquipmentDetails() {
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <InfoRow icon={MapPin} label="Site" value={`${equipment.siteName} (${equipment.siteId})`} />
             <InfoRow icon={User} label="Operator" value={equipment.operatorId || 'Unassigned'} />
+            <InfoRow icon={User} label="Rented By" value={equipment.rentedBy || '—'} />
             <InfoRow icon={DollarSign} label="Daily Rate" value={`$${equipment.dailyRate}/day`} />
             <InfoRow
               icon={CalendarClock}
