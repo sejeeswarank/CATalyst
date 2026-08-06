@@ -4,7 +4,7 @@
 const IMAGES = {
   Excavator: '/vehicles/excavator.jpg',
   Bulldozer: '/vehicles/bulldozer.jpg',
-  Crane: '/vehicles/crane.jpg',
+  'Backhoe Loader': '/vehicles/backhoe-loader.jpg',
   Grader: '/vehicles/grader.jpg',
   'Wheel Loader': '/vehicles/wheel-loader.jpg',
   'Dump Truck': '/vehicles/dump-truck.jpg',
@@ -16,7 +16,7 @@ export default function VehicleIcon({ type, className = 'h-10 w-10', bg = 'bg-wh
   return (
     <div className={`shrink-0 overflow-hidden rounded-lg ${bg} ${padded ? 'p-1' : ''} ${className}`}>
       {src ? (
-        <img src={src} alt={type} className="h-full w-full object-contain" />
+        <img src={src} alt={type} loading="lazy" className="h-full w-full object-contain" />
       ) : (
         <div className="h-full w-full rounded bg-cat-black/10" />
       )}

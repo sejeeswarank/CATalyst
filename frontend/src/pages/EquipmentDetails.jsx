@@ -1,20 +1,41 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, MapPin, User, DollarSign, CalendarClock } from 'lucide-react';
+import { ArrowLeft, MapPin, User, DollarSign, CalendarClock, CalendarCheck2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
+import Input from '@/components/ui/input';
+import Select from '@/components/ui/select';
+import Dialog from '@/components/ui/dialog';
 import StatusBadge from '@/components/common/StatusBadge';
 import VehicleIcon from '@/components/common/VehicleIcon';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import Loader from '@/components/Loader';
-import { useAppData } from '@/state/AppDataContext';
+import { useAppData, TODAY } from '@/state/AppDataContext';
 import { formatDate } from '@/lib/utils';
+
+const todayISO = TODAY.toISOString().slice(0, 10);
+
+const addDaysISO = (iso, days) => {
+  const d = new Date(iso);
+  d.setDate(d.getDate() + days);
+  return d;
+};
 
 export default function EquipmentDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { loading, getEquipmentById } = useAppData();
+  const { loading, operators, getEquipmentById, bookEquipment } = useAppData();
   const equipment = getEquipmentById(id);
+
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [startDate, setStartDate] = useState(todayISO);
+  const [duration, setDuration] = useState(7);
+  const [clientName, setClientName] = useState('');
+  const [assignedOperator, setAssignedOperator] = useState('');
+  const [bookingError, setBookingError] = useState('');
+  const [confirmed, setConfirmed] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <Loader />;
 
@@ -26,6 +47,37 @@ export default function EquipmentDetails() {
       </div>
     );
   }
+
+  const openBookingDialog = () => {
+    setStartDate(todayISO);
+    setDuration(7);
+    setClientName('');
+    setAssignedOperator('');
+    setBookingError('');
+    setBookingOpen(true);
+  };
+
+  const confirmBooking = async (e) => {
+    e.preventDefault();
+    if (!clientName.trim()) return;
+    setSubmitting(true);
+    setBookingError('');
+
+    const result = await bookEquipment(equipment.id, {
+      client: clientName.trim(),
+      operatorId: assignedOperator || null,
+      expectedReturn: addDaysISO(startDate, Number(duration) || 1),
+    });
+
+    setSubmitting(false);
+    if (!result.ok) {
+      setBookingError(result.message);
+      return;
+    }
+
+    setBookingOpen(false);
+    setConfirmed({ client: clientName.trim() });
+  };
 
   const timelineItems = [
     equipment.isRented
@@ -55,6 +107,11 @@ export default function EquipmentDetails() {
               <p className="text-sm normal-case text-cat-slate">{equipment.type}</p>
             </div>
             <StatusBadge status={equipment.status} />
+            {equipment.status === 'Available' && (
+              <Button variant="primary" size="sm" onClick={openBookingDialog}>
+                <CalendarCheck2 className="h-3.5 w-3.5" /> Book This Equipment
+              </Button>
+            )}
           </CardContent>
         </Card>
 
@@ -168,6 +225,87 @@ export default function EquipmentDetails() {
           <ActivityTimeline items={timelineItems} />
         </CardContent>
       </Card>
+
+      <Dialog open={bookingOpen} onClose={() => setBookingOpen(false)} title="Confirm Booking">
+        <form onSubmit={confirmBooking} className="space-y-3">
+          <div className="rounded-xl bg-background p-4 text-sm">
+            <div className="flex justify-between py-1"><span className="text-cat-slate">Equipment</span><span className="font-medium">{equipment.id} · {equipment.type}</span></div>
+            <div className="flex justify-between py-1"><span className="text-cat-slate">Site</span><span className="font-medium">{equipment.siteName}</span></div>
+            <div className="flex justify-between py-1"><span className="text-cat-slate">Est. total</span><span className="font-medium">${(equipment.dailyRate * Number(duration || 1)).toLocaleString()}</span></div>
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+              Rental start date
+            </label>
+            <Input type="date" value={startDate} min={todayISO} onChange={(e) => setStartDate(e.target.value)} required />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+              Rental duration (days)
+            </label>
+            <Input type="number" min={1} value={duration} onChange={(e) => setDuration(e.target.value)} required />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+              Client / Company Name
+            </label>
+            <Input
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder="e.g. BuildRight Corp"
+              autoFocus
+              required
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
+              Assign Operator (optional)
+            </label>
+            <Select value={assignedOperator} onChange={(e) => setAssignedOperator(e.target.value)}>
+              <option value="">No operator assigned yet</option>
+              {operators.map((o) => <option key={o.id} value={o.id}>{o.id} — {o.name}</option>)}
+            </Select>
+          </div>
+
+          <p className="text-xs text-cat-slate">
+            This reserves the machine — it stays in the garage as <strong>Booked</strong> until the gate RFID scan
+            confirms it actually left, which is what stamps the real check-out date.
+          </p>
+
+          {bookingError && (
+            <div className="flex items-center gap-2 rounded-lg bg-danger-bg px-3 py-2 text-sm text-danger-fg">
+              <AlertCircle className="h-4 w-4 shrink-0" /> {bookingError}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => setBookingOpen(false)}>Cancel</Button>
+            <Button type="submit" variant="primary" disabled={!clientName.trim() || submitting}>
+              {submitting ? 'Booking…' : 'Confirm Booking'}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog open={!!confirmed} onClose={() => setConfirmed(null)} title="Booking Confirmed">
+        {confirmed && (
+          <>
+            <p className="text-sm text-cat-slate">
+              <span className="font-semibold text-cat-black">{equipment.id}</span> is reserved for{' '}
+              <span className="font-semibold text-cat-black">{confirmed.client}</span> and marked{' '}
+              <strong>Booked</strong>. It stays in the garage until scanned out on the{' '}
+              <a href="/scan" className="text-cat-yellow-dark hover:underline">Scan Equipment</a> page.
+            </p>
+            <div className="mt-4 flex justify-end">
+              <Button variant="primary" onClick={() => setConfirmed(null)}>Done</Button>
+            </div>
+          </>
+        )}
+      </Dialog>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllData } from '@/data/supabaseData';
 
 export const VEHICLE_TYPES = [
-  'Excavator', 'Bulldozer', 'Crane', 'Grader', 'Wheel Loader', 'Dump Truck', 'Forklift',
+  'Excavator', 'Bulldozer', 'Backhoe Loader', 'Grader', 'Wheel Loader', 'Dump Truck', 'Forklift',
 ];
 export const REGIONS = ['North Region', 'South Region', 'East Region', 'West Region'];
 export const TODAY = new Date();
@@ -21,6 +21,8 @@ export function AppDataProvider({ children }) {
   const [activity, setActivity] = useState([]);
   const [sites, setSites] = useState([]);
   const [operators, setOperators] = useState([]);
+  const [maintenanceSchedule, setMaintenanceSchedule] = useState([]);
+  const [serviceHistory, setServiceHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,6 +32,8 @@ export function AppDataProvider({ children }) {
       setActivity(data.activity);
       setSites(data.sites);
       setOperators(data.operators);
+      setMaintenanceSchedule(data.maintenanceSchedule);
+      setServiceHistory(data.serviceHistory);
       setLoading(false);
     });
   }, []);
@@ -293,10 +297,22 @@ export function AppDataProvider({ children }) {
       updates = { status: 'Available', is_rented: false, check_in_date: todayISO, operator_id: null, rented_by: null };
     }
 
-    const { error } = await supabase.from('equipment').update(updates).eq('id', eq.id);
+    // Optimistic concurrency: only win the update if the row is still in the
+    // status we based our decision on. If another scanner (or a stale cache)
+    // already moved it, the .eq('status', …) matches no rows and we bail out
+    // instead of clobbering their write.
+    const { data: updatedRows, error } = await supabase
+      .from('equipment')
+      .update(updates)
+      .eq('id', eq.id)
+      .eq('status', eq.status)
+      .select();
     if (error) {
       console.error('scanTag update error:', error);
       return { ok: false, message: 'Failed to update equipment — see console.' };
+    }
+    if (!updatedRows || updatedRows.length === 0) {
+      return { ok: false, message: `${eq.id} changed since it was loaded — refresh and scan again.`, equipment: eq };
     }
 
     await supabase.from('scan_log').insert({
@@ -311,6 +327,7 @@ export function AppDataProvider({ children }) {
     // fleet alerts are raised, so it shows up on the Alerts page and the
     // header bell without anyone having to notice it manually.
     let newAlert = null;
+    let alertFailed = false;
     const isUnbookedCheckout = isCheckingOut && !isBookedDeparture;
     if (isUnbookedCheckout) {
       const alertId = `AL-SCAN-${eq.id}-${Date.now()}`;
@@ -324,6 +341,7 @@ export function AppDataProvider({ children }) {
       });
       if (alertError) {
         console.error('scanTag alert insert error:', alertError);
+        alertFailed = true;
       } else {
         newAlert = {
           id: alertId,
@@ -355,17 +373,87 @@ export function AppDataProvider({ children }) {
     setEquipment((prev) => prev.map((e) => (e.id === eq.id ? updatedEq : e)));
     if (newAlert) setAlerts((prev) => [newAlert, ...prev]);
 
+    const unbookedMessage = alertFailed
+      ? `${eq.id} checked out at ${eq.siteName} — no booking on file, but the alert could not be recorded.`
+      : `${eq.id} checked out at ${eq.siteName} — no booking on file, alert raised.`;
+
     return {
       ok: true,
+      partialFailure: alertFailed,
       action: isCheckingOut ? 'check_out' : 'check_in',
       equipment: updatedEq,
       alert: newAlert,
       message: isCheckingOut
         ? isBookedDeparture
           ? `${eq.id} checked out at ${eq.siteName} for ${eq.pendingClient}.`
-          : `${eq.id} checked out at ${eq.siteName} — no booking on file, alert raised.`
+          : unbookedMessage
         : `${eq.id} checked in at ${eq.siteName}.`,
     };
+  }, [equipment]);
+
+  // Per-part due status for one machine: interval comes from
+  // maintenance_schedule (keyed by vehicle type + part), hours-since comes
+  // from total_engine_hours minus the most recent service_history entry for
+  // that part (or the full total if it's never been logged as serviced).
+  // >=100% of interval = Overdue, >=80% = Due Soon, else OK.
+  const getPartsStatus = useCallback((equipmentId) => {
+    const eq = equipment.find((e) => e.id === equipmentId);
+    if (!eq) return [];
+    return maintenanceSchedule
+      .filter((m) => m.vehicleType === eq.type)
+      .map((m) => {
+        const last = serviceHistory
+          .filter((s) => s.equipmentId === equipmentId && s.part === m.part)
+          .sort((a, b) => b.serviceDate - a.serviceDate)[0] || null;
+        const hoursSince = Math.max(0, eq.totalEngineHours - (last?.serviceHours ?? 0));
+        const ratio = hoursSince / m.intervalHours;
+        const status = ratio >= 1 ? 'Overdue' : ratio >= 0.8 ? 'Due Soon' : 'OK';
+        return {
+          part: m.part,
+          intervalHours: m.intervalHours,
+          hoursSince: Number(hoursSince.toFixed(1)),
+          ratio,
+          status,
+          lastServiceDate: last?.serviceDate ?? null,
+          lastServiceHours: last?.serviceHours ?? null,
+          genuinePart: last?.genuinePart ?? null,
+        };
+      })
+      .sort((a, b) => b.ratio - a.ratio);
+  }, [equipment, maintenanceSchedule, serviceHistory]);
+
+  // Records a completed service against the machine's current total engine
+  // hours, so the interval countdown for that part restarts from now.
+  const logService = useCallback(async (equipmentId, part, { genuinePart, invoiceNo } = {}) => {
+    const eq = equipment.find((e) => e.id === equipmentId);
+    if (!eq) return { ok: false, message: 'Equipment not found.' };
+
+    const record = {
+      equipment_id: equipmentId,
+      part,
+      service_hours: eq.totalEngineHours,
+      genuine_part: genuinePart ?? null,
+      invoice_no: invoiceNo?.trim() || null,
+    };
+    const { data, error } = await supabase.from('service_history').insert(record).select().single();
+    if (error) {
+      console.error('logService error:', error);
+      return { ok: false, message: 'Failed to log service — see console.' };
+    }
+
+    setServiceHistory((prev) => [
+      {
+        id: data.id,
+        equipmentId: data.equipment_id,
+        part: data.part,
+        serviceHours: Number(data.service_hours),
+        serviceDate: new Date(data.service_date),
+        genuinePart: data.genuine_part,
+        invoiceNo: data.invoice_no,
+      },
+      ...prev,
+    ]);
+    return { ok: true, message: `${part} logged as serviced on ${eq.id}.` };
   }, [equipment]);
 
   const getRecentScans = useCallback(async (limit = 10) => {
@@ -387,6 +475,7 @@ export function AppDataProvider({ children }) {
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
       addSite, addOperator, scanTag, getRecentScans, bookEquipment,
+      getPartsStatus, logService,
     }),
     [equipment, alerts, activity, sites, operators, loading,
       getKpis, getEquipmentById,
@@ -394,7 +483,8 @@ export function AppDataProvider({ children }) {
       getMaintenanceKpis, getMaintenanceSchedule,
       getUtilizationBreakdown, getEngineHoursTop, getIdleHoursTop,
       getRentalDistributionByType, getFuelTrend, getDowntimeBySite,
-      addSite, addOperator, scanTag, getRecentScans, bookEquipment],
+      addSite, addOperator, scanTag, getRecentScans, bookEquipment,
+      getPartsStatus, logService],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

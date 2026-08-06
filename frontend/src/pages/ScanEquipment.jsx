@@ -97,12 +97,14 @@ export default function ScanEquipment() {
 
       {toast && (
         <div
+          role="status"
+          aria-live="polite"
           className={cn(
             'flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-md animate-fade-in',
-            toast.alert ? 'bg-danger text-white' : toast.ok ? 'bg-cat-black text-cat-yellow' : 'bg-danger text-white'
+            toast.alert || toast.partialFailure || !toast.ok ? 'bg-danger text-white' : 'bg-cat-black text-cat-yellow'
           )}
         >
-          {toast.alert ? (
+          {toast.alert || toast.partialFailure ? (
             <AlertTriangle className="h-4 w-4 shrink-0" />
           ) : toast.ok ? (
             <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -116,8 +118,8 @@ export default function ScanEquipment() {
       <Card>
         <CardHeader><CardTitle>Manual / Reader Input</CardTitle></CardHeader>
         <CardContent>
-          <form onSubmit={handleManualSubmit} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
+          <form onSubmit={handleManualSubmit} className="flex flex-col gap-3">
+            <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-cat-slate">
                 Tag ID
               </label>
@@ -132,9 +134,6 @@ export default function ScanEquipment() {
                 A physical RFID reader acts as a keyboard — it types the tag here and presses Enter automatically.
               </p>
             </div>
-            <Button type="submit" variant="primary" disabled={!manualTag.trim() || !!scanningTag}>
-              <ScanLine className="h-4 w-4" /> Submit Scan
-            </Button>
           </form>
         </CardContent>
       </Card>

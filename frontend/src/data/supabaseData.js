@@ -9,6 +9,8 @@ export async function fetchAllData() {
     { data: activityRaw },
     { data: sitesRaw },
     { data: operatorsRaw },
+    { data: maintenanceScheduleRaw },
+    { data: serviceHistoryRaw },
   ] = await Promise.all([
     supabase.from('equipment').select('*, sites(name, region)'),
     supabase.from('equipment_history').select('*').order('date', { ascending: true }),
@@ -17,6 +19,8 @@ export async function fetchAllData() {
     supabase.from('activity').select('*').order('timestamp', { ascending: false }),
     supabase.from('sites').select('*'),
     supabase.from('operators').select('*'),
+    supabase.from('maintenance_schedule').select('*'),
+    supabase.from('service_history').select('*').order('service_date', { ascending: false }),
   ]);
 
   if (eqErr) console.error('Supabase equipment fetch error:', eqErr);
@@ -72,6 +76,7 @@ export async function fetchAllData() {
       checkInDate,
       rentalDaysLeft,
       engineHoursToday: Number(e.engine_hours_today),
+      totalEngineHours: Number(e.total_engine_hours),
       idleHoursToday: Number(e.idle_hours_today),
       dailyRate: Number(e.daily_rate),
       rentedBy: e.rented_by,
@@ -100,6 +105,7 @@ export async function fetchAllData() {
       vehicle: eq?.type || '',
       site: eq?.siteName || '',
       rentedBy: eq?.rentedBy || null,
+      equipmentStatus: eq?.status || null,
       severity: a.severity,
       status: a.status,
       timestamp: new Date(a.timestamp),
@@ -129,5 +135,22 @@ export async function fetchAllData() {
     location: o.location || '',
   }));
 
-  return { equipment, alerts, activity, sites, operators };
+  const maintenanceSchedule = (maintenanceScheduleRaw || []).map((m) => ({
+    id: m.id,
+    vehicleType: m.vehicle_type,
+    part: m.part,
+    intervalHours: Number(m.interval_hours),
+  }));
+
+  const serviceHistory = (serviceHistoryRaw || []).map((s) => ({
+    id: s.id,
+    equipmentId: s.equipment_id,
+    part: s.part,
+    serviceHours: Number(s.service_hours),
+    serviceDate: new Date(s.service_date),
+    genuinePart: s.genuine_part,
+    invoiceNo: s.invoice_no,
+  }));
+
+  return { equipment, alerts, activity, sites, operators, maintenanceSchedule, serviceHistory };
 }

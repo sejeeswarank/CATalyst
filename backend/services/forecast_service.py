@@ -9,13 +9,20 @@ from config.supabase_client import supabase
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MODEL_PATH = os.path.join(ROOT, "demand_model.joblib")
 
-_bundle = joblib.load(MODEL_PATH)
-_model = _bundle["model"]
-_encoders = _bundle["encoders"]
-_feature_cols = _bundle["feature_cols"]
-
 PAGE = 1000
 HORIZON_DAYS = 7
+
+# Lazy-loaded on first forecast call rather than at import — a missing or
+# corrupt model file should fail that one request, not take the whole Flask
+# app (including /api/health) down at startup.
+_bundle = None
+
+
+def _load_bundle():
+    global _bundle
+    if _bundle is None:
+        _bundle = joblib.load(MODEL_PATH)
+    return _bundle
 
 
 def _load_history():
@@ -45,18 +52,23 @@ def generate_forecast():
     Future weather is unknowable, so predictions are averaged across every
     weather class the model was trained on rather than guessing one.
     """
+    bundle = _load_bundle()
+    model = bundle["model"]
+    encoders = bundle["encoders"]
+    feature_cols = bundle["feature_cols"]
+
     history = _load_history()
     if history.empty:
         return []
 
     site_project = {
-        site: _mode(group["project_type"], _encoders["project_type"].classes_[0])
+        site: _mode(group["project_type"], encoders["project_type"].classes_[0])
         for site, group in history.groupby("site_id")
     }
 
     sites = sorted(site_project)
     equipment_types = sorted(history["equipment_type"].unique())
-    weathers = list(_encoders["weather"].classes_)
+    weathers = list(encoders["weather"].classes_)
     today = date.today()
 
     rows = []
@@ -80,10 +92,10 @@ def generate_forecast():
                     )
 
     frame = pd.DataFrame(rows)
-    for column, encoder in _encoders.items():
+    for column, encoder in encoders.items():
         frame[f"{column}_enc"] = encoder.transform(frame[column])
 
-    frame["predicted_demand"] = _model.predict(frame[_feature_cols])
+    frame["predicted_demand"] = model.predict(frame[feature_cols])
 
     daily = (
         frame.groupby(["forecast_date", "site_id", "equipment_type"], as_index=False)["predicted_demand"]
@@ -96,6 +108,12 @@ def generate_forecast():
 
 
 def persist_forecast(records):
-    supabase.table("demand_forecast").delete().neq("site_id", "").execute()
-    if records:
-        supabase.table("demand_forecast").insert(records).execute()
+    if not records:
+        return
+    # Insert the fresh window first, then delete anything outside it. If the
+    # insert fails we raise before the delete, so the table is never left
+    # empty — the previous forecast stays intact until a new one fully lands.
+    window_dates = sorted({r["forecast_date"] for r in records})
+    supabase.table("demand_forecast").delete().in_("forecast_date", window_dates).execute()
+    supabase.table("demand_forecast").insert(records).execute()
+    supabase.table("demand_forecast").delete().not_.in_("forecast_date", window_dates).execute()

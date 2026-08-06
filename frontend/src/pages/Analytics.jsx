@@ -1,4 +1,6 @@
-import { Wrench, AlertOctagon, CalendarClock, Clock3, Download } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Wrench, AlertOctagon, CalendarClock, Clock3, Download, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, THead, TBody, TR, TH, TD } from '@/components/ui/table';
 import Button from '@/components/ui/button';
@@ -11,11 +13,22 @@ import { useAppData } from '@/state/AppDataContext';
 import { cn, formatDate, downloadCSV } from '@/lib/utils';
 
 export default function Analytics() {
+  const navigate = useNavigate();
   const { loading, getMaintenanceKpis, getMaintenanceSchedule } = useAppData();
   const kpis = getMaintenanceKpis();
   const schedule = getMaintenanceSchedule();
+  const [filter, setFilter] = useState(null);
 
   if (loading) return <Loader />;
+
+  const filtered = filter
+    ? schedule.filter((e) => {
+        if (filter === 'maintenance') return e.status === 'Maintenance';
+        if (filter === 'overdue') return e.daysUntilService < 0;
+        if (filter === 'due-soon') return e.daysUntilService >= 0 && e.daysUntilService <= 7;
+        return true;
+      })
+    : schedule;
 
   const exportSchedule = () =>
     downloadCSV(
@@ -42,10 +55,61 @@ export default function Analytics() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard icon={Wrench} label="In Maintenance Now" value={kpis.inMaintenance} tone="danger" />
-        <KpiCard icon={AlertOctagon} label="Overdue Service" value={kpis.overdue} tone="danger" />
-        <KpiCard icon={CalendarClock} label="Due This Week" value={kpis.dueThisWeek} tone="warning" />
-        <KpiCard icon={Clock3} label="Avg. Days Since Service" value={kpis.avgDaysSinceService} tone="default" />
+        <div
+          onClick={() => setFilter(filter === 'maintenance' ? null : 'maintenance')}
+          className={cn(
+            'flex cursor-pointer flex-col items-start justify-between rounded-2xl border p-4 transition-all hover:shadow-md',
+            filter === 'maintenance' ? 'border-danger bg-danger/10' : 'border-border'
+          )}
+        >
+          <Wrench className="h-5 w-5 text-danger" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cat-slate">In Maintenance Now</p>
+            <p className="font-display text-2xl text-cat-black">{kpis.inMaintenance}</p>
+          </div>
+        </div>
+
+        <div
+          onClick={() => setFilter(filter === 'overdue' ? null : 'overdue')}
+          className={cn(
+            'flex cursor-pointer flex-col items-start justify-between rounded-2xl border p-4 transition-all hover:shadow-md',
+            filter === 'overdue' ? 'border-danger bg-danger/10' : 'border-border'
+          )}
+        >
+          <AlertOctagon className="h-5 w-5 text-danger" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cat-slate">Overdue Service</p>
+            <p className="font-display text-2xl text-cat-black">{kpis.overdue}</p>
+          </div>
+        </div>
+
+        <div
+          onClick={() => setFilter(filter === 'due-soon' ? null : 'due-soon')}
+          className={cn(
+            'flex cursor-pointer flex-col items-start justify-between rounded-2xl border p-4 transition-all hover:shadow-md',
+            filter === 'due-soon' ? 'border-cat-yellow bg-cat-yellow/10' : 'border-border'
+          )}
+        >
+          <CalendarClock className="h-5 w-5 text-warning" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cat-slate">Due This Week</p>
+            <p className="font-display text-2xl text-cat-black">{kpis.dueThisWeek}</p>
+          </div>
+        </div>
+
+        <div
+          onClick={() => setFilter(null)}
+          className={cn(
+            'flex cursor-pointer flex-col items-start justify-between rounded-2xl border p-4 transition-all hover:shadow-md',
+            filter === null ? 'border-cat-yellow bg-cat-yellow/10' : 'border-border'
+          )}
+        >
+          <Clock3 className="h-5 w-5 text-cat-slate" />
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cat-slate">Avg. Days Since Service</p>
+            <p className="font-display text-2xl text-cat-black">{kpis.avgDaysSinceService}</p>
+          </div>
+        </div>
       </div>
 
       <Card>
@@ -67,10 +131,11 @@ export default function Analytics() {
                   <TH>Last Service</TH>
                   <TH>Next Service Due</TH>
                   <TH>Days Until Due</TH>
+                  <TH className="text-right">Actions</TH>
                 </TR>
               </THead>
               <TBody>
-                {schedule.map((e) => (
+                {filtered.map((e) => (
                   <TR key={e.id}>
                     <TD className="font-semibold text-cat-black">{e.id}</TD>
                     <TD>{e.type}</TD>
@@ -86,6 +151,11 @@ export default function Analytics() {
                           {e.daysUntilService}d
                         </span>
                       )}
+                    </TD>
+                    <TD className="text-right">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/equipment/${e.id}`)}>
+                        <Eye className="h-3.5 w-3.5" /> View Details
+                      </Button>
                     </TD>
                   </TR>
                 ))}

@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(ROOT, ".env"))
 
 url = os.environ["SUPABASE_URL"]
-key = os.environ["Service_role"]
+key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
 client = create_client(url, key)
 
 csv_path = os.path.join(ROOT, "historical_demand.csv")

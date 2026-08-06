@@ -1,7 +1,11 @@
+import logging
+
 from flask import Flask, jsonify
 from flask_cors import CORS
 
 from routes.forecast import forecast_bp
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 CORS(app)

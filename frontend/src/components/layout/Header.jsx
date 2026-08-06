@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/analytics', label: 'Analytics' },
   { to: '/forecast', label: 'Demand Forecast' },
   { to: '/machinery-usage', label: 'Machinery Usage' },
+  { to: '/maintenance', label: 'Maintenance' },
   { to: '/scan', label: 'Scan Equipment' },
   { to: '/settings', label: 'Fleet Setup' },
 ];
@@ -71,13 +72,19 @@ export default function Header() {
             />
           </form>
 
-          <button onClick={handleSearch} className="flex h-9 w-9 items-center justify-center text-cat-black sm:hidden">
+          <button
+            onClick={handleSearch}
+            aria-label="Search"
+            className="flex h-9 w-9 items-center justify-center text-cat-black sm:hidden"
+          >
             <Search className="h-5 w-5" />
           </button>
 
           <div className="relative">
             <button
               onClick={() => setNotifOpen((v) => !v)}
+              aria-label={`Notifications${activeCount > 0 ? ` (${activeCount} active)` : ''}`}
+              aria-expanded={notifOpen}
               className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-cat-slate transition-colors hover:bg-background"
             >
               <Bell size={17} />

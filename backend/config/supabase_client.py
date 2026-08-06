@@ -9,4 +9,4 @@ from supabase import create_client
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(ROOT, ".env"))
 
-supabase = create_client(os.environ["SUPABASE_URL"], os.environ["Service_role"])
+supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"])

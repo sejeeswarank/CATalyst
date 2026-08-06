@@ -13,8 +13,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import PageHero from '@/components/common/PageHero';
 import KpiCard from '@/components/dashboard/KpiCard';
 import AssetTable from '@/components/dashboard/AssetTable';
+import EquipmentSpotlight from '@/components/dashboard/EquipmentSpotlight';
 import UtilizationPieChart from '@/components/dashboard/charts/UtilizationPieChart';
-import RentalDistributionPieChart from '@/components/dashboard/charts/RentalDistributionPieChart';
 import ActivityTimeline from '@/components/dashboard/ActivityTimeline';
 import Loader from '@/components/Loader';
 import { useAppData } from '@/state/AppDataContext';
@@ -65,18 +65,13 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Rentals by Vehicle Type</CardTitle></CardHeader>
-          <CardContent>
-            <RentalDistributionPieChart data={getRentalDistributionByType()} />
-          </CardContent>
-        </Card>
-
-        <Card>
           <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
           <CardContent className="max-h-[260px] overflow-y-auto">
             <ActivityTimeline items={activity} />
           </CardContent>
         </Card>
+
+        <EquipmentSpotlight equipment={equipment} />
       </div>
 
       <Card>
