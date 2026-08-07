@@ -2,7 +2,10 @@
 
 > A full-stack hackathon project: a CAT-branded fleet operations dashboard backed by live Supabase data, a two-step booking → RFID gate-scan rental workflow, maintenance analytics, a rule-based alert engine, and a Python ML-powered 7-day demand forecast.
 
+> **Sub-docs:** [frontend/frontend.md](frontend/frontend.md) · [backend/backend.md](backend/backend.md)
+
 ---
+
 
 ## Table of Contents
 
